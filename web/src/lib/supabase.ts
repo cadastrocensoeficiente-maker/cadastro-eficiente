@@ -1,11 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url = import.meta.env.VITE_SUPABASE_URL as string
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
-
-if (!url || !key) {
-  throw new Error('Configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.')
-}
+// Chave publicável (pública por definição; a segurança está no RLS do banco).
+const url = (import.meta.env.VITE_SUPABASE_URL as string) || 'https://pwesznsuwypbfqrayqoz.supabase.co'
+const key = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string) || 'sb_publishable_jG-8DFdvH0cMCVM32KpqLA_lUCnDs7j'
 
 export const supabase = createClient(url, key, {
   auth: { persistSession: true, autoRefreshToken: true },

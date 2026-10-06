@@ -3,8 +3,14 @@
 import { AwsClient } from 'aws4fetch'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
+const PADROES: Record<string, string> = {
+  SUPABASE_URL: 'https://pwesznsuwypbfqrayqoz.supabase.co',
+  SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_jG-8DFdvH0cMCVM32KpqLA_lUCnDs7j',
+  R2_BUCKET: 'cadastro-eficiente-fotos',
+}
+
 const env = (k: string) => {
-  const v = process.env[k]
+  const v = process.env[k] || PADROES[k]
   if (!v) throw new HttpError(500, `Variável de ambiente ${k} não configurada no servidor.`)
   return v
 }
