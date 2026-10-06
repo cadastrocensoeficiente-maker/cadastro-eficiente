@@ -6,11 +6,12 @@ import { useAuth } from '../lib/auth'
 import type { Contract, LayoutItem } from '../lib/types'
 import TabelaPontos from '../components/TabelaPontos'
 import Colunas from '../components/Colunas'
+import Equipe from '../components/Equipe'
 import { ContratoForm } from './Contratos'
 
 const Importar = lazy(() => import('../components/Importar'))
 
-type Aba = 'pontos' | 'colunas' | 'importar' | 'dados'
+type Aba = 'pontos' | 'colunas' | 'equipe' | 'importar' | 'dados'
 
 export default function Contrato() {
   const { contractId } = useParams()
@@ -41,6 +42,7 @@ export default function Contrato() {
   const abas: { id: Aba; nome: string; admin?: boolean }[] = [
     { id: 'pontos', nome: 'Pontos' },
     { id: 'colunas', nome: 'Colunas' },
+    { id: 'equipe', nome: 'Equipe', admin: true },
     { id: 'importar', nome: 'Importar Excel', admin: true },
     { id: 'dados', nome: 'Dados do contrato', admin: true },
   ]
@@ -77,6 +79,7 @@ export default function Contrato() {
 
       {aba === 'pontos' && <TabelaPontos contrato={contrato} layout={layout} />}
       {aba === 'colunas' && <Colunas contrato={contrato} onMudou={recarregar} />}
+      {aba === 'equipe' && isAdmin && <Equipe contrato={contrato} />}
       {aba === 'importar' && isAdmin && (
         <Suspense fallback={<div className="carregando">Carregando…</div>}>
           <Importar contrato={contrato} layout={layout} />

@@ -6,12 +6,26 @@ import Contrato from './pages/Contrato'
 import PontoForm from './pages/PontoForm'
 import Fotos from './pages/Fotos'
 import Usuarios from './pages/Usuarios'
+import { URL_APP_CAMPO } from './components/Equipe'
 
 export default function App() {
   const { session, profile, carregando, isAdmin, sair } = useAuth()
 
   if (carregando) return <div className="tela-centro">Carregando…</div>
   if (!session) return <Login />
+
+  if (profile?.role === 'cadastrador') {
+    return (
+      <div className="login">
+        <div className="login-card">
+          <div className="marca grande"><span className="marca-ponto" aria-hidden />Cadastro <b>Eficiente</b></div>
+          <p>Este é o painel de gestão. Para cadastrar pontos em campo, use o <b>aplicativo de campo</b> no celular:</p>
+          <a className="btn primario largo" href={URL_APP_CAMPO}>Abrir aplicativo de campo</a>
+          <button className="btn-link" onClick={sair}>Sair</button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="app">
@@ -23,6 +37,7 @@ export default function App() {
         <nav>
           <Link to="/">Contratos</Link>
           {isAdmin && <Link to="/usuarios">Usuários</Link>}
+          <a href={URL_APP_CAMPO} target="_blank" rel="noreferrer">App de campo ↗</a>
         </nav>
         <div className="usuario">
           <span title={profile?.email ?? ''}>

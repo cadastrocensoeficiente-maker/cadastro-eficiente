@@ -5,7 +5,7 @@ import type { Profile, Role } from '../lib/types'
 
 const PAPEIS: { value: Role; label: string }[] = [
   { value: 'pendente', label: 'Pendente (sem acesso)' },
-  { value: 'visualizador', label: 'Visualizador' },
+  { value: 'visualizador', label: 'Administrativo (consulta)' },
   { value: 'cadastrador', label: 'Cadastrador' },
   { value: 'admin', label: 'Administrador' },
 ]
