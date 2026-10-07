@@ -287,3 +287,21 @@ label.check input { width: 18px; min-height: 18px; }
 .modal-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .modal-topo h2 { margin: 0; font-size: 1.15rem; }
 .modal-tabela { max-height: 60vh; overflow: auto; }
+
+/* Excluir contrato */
+.zona-perigo { margin-top: 28px; padding: 18px 20px; border: 1px solid var(--erro); border-radius: var(--raio); background: var(--erro-claro); display: grid; gap: 12px; }
+.zona-perigo h3 { margin: 0 0 4px; color: var(--erro); font-size: 1rem; }
+.zona-perigo .nota { color: var(--tinta-2); margin: 0; }
+.zona-perigo > .btn { justify-self: start; }
+.confirmar-exclusao { display: grid; gap: 10px; }
+.confirmar-exclusao label { display: grid; gap: 6px; font-size: .9rem; }
+.confirmar-exclusao input { max-width: 420px; }
+.linha-botoes { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn.perigo.cheio { background: var(--erro); color: #fff; border-color: var(--erro); }
+.btn.perigo.cheio:disabled { opacity: .45; }
+.contratos-excluidos { margin-top: 28px; }
+.link-btn { background: none; border: 0; padding: 4px 0; color: var(--tinta-2); font: inherit; cursor: pointer; }
+.link-btn:hover { color: var(--tinta); }
+.contratos-excluidos ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+.contratos-excluidos li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--superficie); border: 1px dashed var(--linha); border-radius: var(--raio); }
+.contratos-excluidos small { color: var(--tinta-3); }

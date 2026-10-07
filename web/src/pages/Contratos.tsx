@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import { listContracts, saveContract } from '../lib/api'
+import { Link, useLocation } from 'react-router-dom'
+import { listContracts, listDeletedContracts, restoreContract, saveContract, type ContratoExcluido } from '../lib/api'
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import type { Contract } from '../lib/types'
@@ -18,11 +18,28 @@ export default function Contratos() {
   const [contratos, setContratos] = useState<Contract[]>([])
   const [erro, setErro] = useState('')
   const [novo, setNovo] = useState(false)
+  const location = useLocation()
+  const [aviso, setAviso] = useState<string>((location.state as { aviso?: string } | null)?.aviso ?? '')
+  const [excluidos, setExcluidos] = useState<ContratoExcluido[]>([])
+  const [verExcluidos, setVerExcluidos] = useState(false)
 
-  const carregar = () => listContracts().then(setContratos).catch((e) => setErro(msgErro(e)))
+  const carregar = () => {
+    listContracts().then(setContratos).catch((e) => setErro(msgErro(e)))
+    if (isAdmin) listDeletedContracts().then(setExcluidos).catch(() => {})
+  }
   useEffect(() => {
     carregar()
-  }, [])
+  }, [isAdmin])
+
+  async function restaurar(c: ContratoExcluido) {
+    try {
+      await restoreContract(c.id)
+      setAviso(`Contrato ${c.nome} restaurado.`)
+      carregar()
+    } catch (e) {
+      setErro(msgErro(e))
+    }
+  }
 
   if (profile?.role === 'pendente') {
     return (
@@ -44,6 +61,12 @@ export default function Contratos() {
         )}
       </div>
       {erro && <div className="alerta erro">{erro}</div>}
+      {aviso && (
+        <div className="alerta ok barra-acao">
+          <span>{aviso}</span>
+          <button className="btn-x" onClick={() => setAviso('')} aria-label="Fechar">×</button>
+        </div>
+      )}
       {novo && <ContratoForm onFechar={() => setNovo(false)} onSalvo={() => { setNovo(false); carregar() }} />}
 
       {contratos.length === 0 && !novo ? (
@@ -60,6 +83,28 @@ export default function Contratos() {
               {!c.ativo && <span className="etiqueta">inativo</span>}
             </Link>
           ))}
+        </div>
+      )}
+
+      {isAdmin && excluidos.length > 0 && (
+        <div className="contratos-excluidos">
+          <button className="link-btn" onClick={() => setVerExcluidos(!verExcluidos)}>
+            {verExcluidos ? '▾' : '▸'} 🗑 Contratos excluídos ({excluidos.length})
+          </button>
+          {verExcluidos && (
+            <ul>
+              {excluidos.map((c) => (
+                <li key={c.id}>
+                  <span>
+                    <b>{c.nome}</b> <small>{[c.municipio, c.uf].filter(Boolean).join(' / ')} · {c.pontos} ponto(s) · excluído em{' '}
+                    {new Date(c.excluido_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {c.excluido_por_nome ? ` por ${c.excluido_por_nome}` : ''}</small>
+                  </span>
+                  <button className="btn" onClick={() => restaurar(c)}>↶ Restaurar</button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </section>

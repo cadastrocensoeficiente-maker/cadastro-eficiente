@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { getContract, getLayout } from '../lib/api'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { deleteContract, getContract, getLayout } from '../lib/api'
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import type { Contract, LayoutItem } from '../lib/types'
@@ -86,7 +86,61 @@ export default function Contrato() {
         </Suspense>
       )}
       {aba === 'dados' && isAdmin && (
-        <ContratoForm contrato={contrato} onFechar={() => setParams({ aba: 'pontos' })} onSalvo={(c) => { setContrato(c); recarregar() }} />
+        <>
+          <ContratoForm contrato={contrato} onFechar={() => setParams({ aba: 'pontos' })} onSalvo={(c) => { setContrato(c); recarregar() }} />
+          <ExcluirContrato contrato={contrato} />
+        </>
+      )}
+    </section>
+  )
+}
+
+function ExcluirContrato({ contrato }: { contrato: Contract }) {
+  const navigate = useNavigate()
+  const [aberto, setAberto] = useState(false)
+  const [digitado, setDigitado] = useState('')
+  const [excluindo, setExcluindo] = useState(false)
+  const [erro, setErro] = useState('')
+  const confere = digitado.trim().toUpperCase() === contrato.nome.trim().toUpperCase()
+
+  async function excluir() {
+    if (!confere) return
+    setExcluindo(true)
+    setErro('')
+    try {
+      await deleteContract(contrato.id)
+      navigate('/', { state: { aviso: `Contrato ${contrato.nome} movido para a lixeira.` } })
+    } catch (e) {
+      setErro(msgErro(e))
+      setExcluindo(false)
+    }
+  }
+
+  return (
+    <section className="zona-perigo">
+      <div>
+        <h3>Excluir contrato</h3>
+        <p className="nota">
+          O contrato vai para a <b>lixeira</b>: some do painel e do app de campo, junto com os pontos, colunas e fotos dele.
+          Nada é apagado — dá para restaurar na tela de Contratos, em “Contratos excluídos”.
+        </p>
+      </div>
+      {!aberto ? (
+        <button className="btn perigo" onClick={() => setAberto(true)}>🗑 Excluir contrato</button>
+      ) : (
+        <div className="confirmar-exclusao">
+          <label>
+            Para confirmar, digite o nome do contrato: <b>{contrato.nome}</b>
+            <input value={digitado} onChange={(e) => setDigitado(e.target.value)} placeholder={contrato.nome} autoFocus />
+          </label>
+          <div className="linha-botoes">
+            <button className="btn perigo cheio" disabled={!confere || excluindo} onClick={excluir}>
+              {excluindo ? 'Excluindo…' : 'Excluir contrato'}
+            </button>
+            <button className="btn" onClick={() => { setAberto(false); setDigitado('') }}>Cancelar</button>
+          </div>
+          {erro && <div className="alerta erro">{erro}</div>}
+        </div>
       )}
     </section>
   )

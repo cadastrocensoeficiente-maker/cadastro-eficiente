@@ -22,6 +22,29 @@ export async function saveContract(c: Partial<Contract> & { nome: string }) {
 }
 
 // ---------------- Colunas (sempre via RPC: o banco mantém 1..N) ----------------
+/** Move o contrato para a lixeira (somente admin): some do painel e do app, com pontos e fotos. */
+export async function deleteContract(id: string) {
+  unwrap(await supabase.rpc('admin_excluir_contrato', { p_contract: id }))
+}
+
+export async function restoreContract(id: string) {
+  unwrap(await supabase.rpc('admin_restaurar_contrato', { p_contract: id }))
+}
+
+export interface ContratoExcluido {
+  id: string
+  nome: string
+  municipio: string | null
+  uf: string | null
+  pontos: number
+  excluido_em: string
+  excluido_por_nome: string | null
+}
+
+export async function listDeletedContracts() {
+  return unwrap(await supabase.rpc('admin_contratos_excluidos')) as ContratoExcluido[]
+}
+
 export async function listColumns(contractId: string) {
   return unwrap(
     await supabase.from('contract_columns').select('*').eq('contract_id', contractId).order('position'),
