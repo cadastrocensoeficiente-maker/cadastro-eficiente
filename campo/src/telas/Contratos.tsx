@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../lib/db'
-import { sincronizar } from '../lib/sync'
+import { ouvirSync, sincronizar } from '../lib/sync'
 import type { Tela, Usuario } from '../App'
 import { useOnline } from './BarraStatus'
 
@@ -21,11 +22,39 @@ export default function Contratos({ usuario, irPara }: { usuario: Usuario; irPar
     return m
   }, [usuario.id])
 
+  const [atualizando, setAtualizando] = useState(false)
+  const [msg, setMsg] = useState('')
+  useEffect(() => {
+    const off = ouvirSync((e) => e.ultimoErro && setMsg(e.ultimoErro))
+    return () => {
+      off()
+    }
+  }, [])
+
+  async function atualizar() {
+    setMsg('')
+    setAtualizando(true)
+    await sincronizar({ contratos: true })
+    setAtualizando(false)
+  }
+
   if (!contratos) return <div className="centro">Carregando…</div>
+  const atualizadoEm = contratos.reduce<string | null>((m, c) => (!m || c.atualizadoEm > m ? c.atualizadoEm : m), null)
 
   return (
     <main className="tela">
-      <h2 className="titulo">Meus contratos</h2>
+      <div className="titulo-linha">
+        <h2 className="titulo">Meus contratos</h2>
+        <button className="btn" onClick={atualizar} disabled={!online || atualizando}>
+          {atualizando ? '⟳ Atualizando…' : '⟳ Atualizar'}
+        </button>
+      </div>
+      <p className="nota">
+        {online
+          ? `Contratos e campos atualizados automaticamente${atualizadoEm ? ` · última vez às ${new Date(atualizadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}.`
+          : 'Sem internet: usando os campos baixados por último.'}
+      </p>
+      {msg && <div className="alerta erro">{msg}</div>}
       {contratos.length === 0 ? (
         <div className="vazio">
           <p>Nenhum contrato atribuído a você neste aparelho.</p>

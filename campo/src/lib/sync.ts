@@ -123,9 +123,14 @@ async function enviarFotos() {
 }
 
 let emAndamento: Promise<void> | null = null
+let ultimaBaixaContratos = 0
+// Contratos e colunas são conferidos no servidor a cada 1 minuto (com internet),
+// além de ao abrir o app, ao voltar para ele e no botão Atualizar.
+const INTERVALO_CONTRATOS_MS = 60_000
 
 export function sincronizar(opcoes: { contratos?: boolean } = {}): Promise<void> {
-  if (emAndamento) return emAndamento
+  // Pedido de atualização durante um envio em andamento: roda logo em seguida.
+  if (emAndamento) return opcoes.contratos ? emAndamento.then(() => sincronizar(opcoes)) : emAndamento
   if (!navigator.onLine) return Promise.resolve()
   emAndamento = (async () => {
     emitir({ rodando: true, ultimoErro: null })
@@ -136,7 +141,10 @@ export function sincronizar(opcoes: { contratos?: boolean } = {}): Promise<void>
         return
       }
       emitir({ precisaLogin: false })
-      if (opcoes.contratos) await baixarContratos()
+      if (opcoes.contratos || Date.now() - ultimaBaixaContratos > INTERVALO_CONTRATOS_MS) {
+        await baixarContratos()
+        ultimaBaixaContratos = Date.now()
+      }
 
       const pendentes = await db.pontos
         .where('status').anyOf('pendente', 'enviando')

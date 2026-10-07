@@ -52,8 +52,12 @@ export default function App() {
     })
     const aoVoltar = () => sincronizar({ contratos: true })
     window.addEventListener('online', aoVoltar)
+    // Ao voltar para o app (tela ligada / troca de aplicativo), busca alterações do painel.
+    const aoFocar = () => document.visibilityState === 'visible' && sincronizar({ contratos: true })
+    document.addEventListener('visibilitychange', aoFocar)
     const t = setInterval(() => sincronizar(), 30_000)
     return () => {
+      document.removeEventListener('visibilitychange', aoFocar)
       window.removeEventListener('online', aoVoltar)
       clearInterval(t)
     }
