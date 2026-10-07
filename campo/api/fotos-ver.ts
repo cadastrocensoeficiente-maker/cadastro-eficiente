@@ -10,7 +10,7 @@ export const POST = responder(async (req) => {
   const { point_id } = (await req.json()) as { point_id?: string }
   if (!point_id) throw new HttpError(400, 'point_id é obrigatório.')
 
-  const { data, error } = await sb.from('point_photos').select('id, r2_key').eq('point_id', point_id)
+  const { data, error } = await sb.from('point_photos').select('id, r2_key').eq('point_id', point_id).eq('armazenamento', 'r2')
   if (error) throw new HttpError(400, error.message)
 
   const urls: Record<string, string> = {}

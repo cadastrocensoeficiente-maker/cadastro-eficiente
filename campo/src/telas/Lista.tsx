@@ -1,12 +1,12 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type PontoLocal } from '../lib/db'
-import { reenviar } from '../lib/sync'
+import BotaoSincronizar from './Sincronizar'
 import type { Tela, Usuario } from '../App'
 
 const ROTULO: Record<PontoLocal['status'], string> = {
-  pendente: 'A enviar',
+  pendente: 'No celular',
   enviando: 'Enviando',
-  enviado: 'Enviado',
+  enviado: 'Fotos pendentes',
   erro: 'Erro',
 }
 
@@ -19,11 +19,12 @@ export default function Lista({ usuario, contractId, irPara }: { usuario: Usuari
   const fotos = useLiveQuery(async () => {
     const ids = (pontos ?? []).map((p) => p.localId)
     const fs = await db.fotos.where('localPointId').anyOf(ids).toArray()
-    const m: Record<string, { total: number; pend: number }> = {}
+    const m: Record<string, { total: number; pend: number; erro?: string }> = {}
     for (const f of fs) {
       m[f.localPointId] ??= { total: 0, pend: 0 }
       m[f.localPointId].total++
       if (f.status !== 'enviado') m[f.localPointId].pend++
+      if (f.status === 'erro' && f.erro) m[f.localPointId].erro = f.erro
     }
     return m
   }, [pontos])
@@ -38,10 +39,11 @@ export default function Lista({ usuario, contractId, irPara }: { usuario: Usuari
         <h2 className="titulo">{contrato.nome}</h2>
         <button className="btn primario" onClick={() => irPara({ nome: 'cadastro', contractId })}>+ Novo</button>
       </div>
-      <p className="nota">{pontos.length} ponto(s) cadastrados por você neste aparelho.</p>
+      <p className="nota">{pontos.length} ponto(s) guardados no celular. Ao sincronizar, eles são enviados e saem desta lista.</p>
+      <BotaoSincronizar userId={usuario.id} />
 
       {pontos.length === 0 ? (
-        <div className="vazio">Nenhum ponto cadastrado ainda.</div>
+        <div className="vazio">Nenhum ponto no celular. Tudo já foi sincronizado.</div>
       ) : (
         <ul className="lista">
           {pontos.map((p) => {
@@ -63,10 +65,10 @@ export default function Lista({ usuario, contractId, irPara }: { usuario: Usuari
                 {p.status === 'erro' && (
                   <div className="item-erro">
                     <span>{p.erro}</span>
-                    <button className="btn pequeno" onClick={() => reenviar(p.localId)}>Tentar de novo</button>
                   </div>
                 )}
-                {!editavel && p.status === 'enviado' && f?.pend ? <div className="item-info">Fotos ainda serão enviadas.</div> : null}
+                {f?.erro && <div className="item-erro"><span>Foto: {f.erro}</span></div>}
+                {!editavel && p.status === 'enviado' && f?.pend ? <div className="item-info">Ponto enviado; as fotos vão na próxima sincronização.</div> : null}
               </li>
             )
           })}

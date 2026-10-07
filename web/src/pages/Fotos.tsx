@@ -45,7 +45,7 @@ export default function Fotos() {
       setFotos(f)
       if (f.length) {
         try {
-          setUrls((await photoUrls(pointId!)).urls)
+          setUrls(await photoUrls(f))
         } catch (e) {
           setErro(msgErro(e))
         }
@@ -68,7 +68,7 @@ export default function Fotos() {
         setEnviando(`Enviando ${i + 1} de ${lista.length}…`)
         const blob = await comprimir(lista[i])
         const nome = `${ponto.ID}_${Date.now()}_${i + 1}.jpg`
-        await uploadPhoto(ponto.id, blob, nome)
+        await uploadPhoto(ponto.id, ponto.contract_id, blob, nome)
       }
       await carregar()
     } catch (e) {
@@ -81,7 +81,7 @@ export default function Fotos() {
   async function excluir(f: Photo) {
     if (!confirm('Excluir esta foto definitivamente?')) return
     try {
-      await deletePhoto(f.id)
+      await deletePhoto(f)
       setAberta(null)
       await carregar()
     } catch (e) {

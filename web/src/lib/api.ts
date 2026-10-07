@@ -155,23 +155,56 @@ export async function listPhotos(pointId: string) {
   ) as Photo[]
 }
 
-export async function photoUrls(pointId: string) {
-  return callApi<{ urls: Record<string, string> }>('/api/fotos-ver', { point_id: pointId })
+/** Links temporários das fotos: R2 via /api e armazenamento do Supabase direto. */
+export async function photoUrls(fotos: Photo[]) {
+  const urls: Record<string, string> = {}
+  const doSupabase = fotos.filter((f) => f.armazenamento === 'supabase')
+  if (doSupabase.length) {
+    const { data, error } = await supabase.storage.from('fotos').createSignedUrls(doSupabase.map((f) => f.r2_key), 3600)
+    if (error) throw error
+    data?.forEach((d, i) => { if (d.signedUrl) urls[doSupabase[i].id] = d.signedUrl })
+  }
+  const doR2 = fotos.filter((f) => f.armazenamento !== 'supabase')
+  if (doR2.length) {
+    const r = await callApi<{ urls: Record<string, string> }>('/api/fotos-ver', { point_id: doR2[0].point_id })
+    Object.assign(urls, r.urls)
+  }
+  return urls
 }
 
-export async function uploadPhoto(pointId: string, file: Blob, nome: string) {
-  const { url, key } = await callApi<{ url: string; key: string }>('/api/fotos-upload', {
-    point_id: pointId, content_type: file.type || 'image/jpeg', nome,
-  })
-  const put = await fetch(url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'image/jpeg' } })
-  if (!put.ok) throw new Error(`Falha ao enviar a foto para o armazenamento (${put.status}).`)
-  unwrap(
-    await supabase.from('point_photos').insert({
-      point_id: pointId, r2_key: key, nome_arquivo: nome, content_type: file.type || 'image/jpeg', tamanho_bytes: file.size,
-    }),
-  )
+class SemR2 extends Error {}
+
+export async function uploadPhoto(pointId: string, contractId: string, file: Blob, nome: string) {
+  const tipo = file.type || 'image/jpeg'
+  try {
+    const res = await fetch('/api/fotos-upload', {
+      method: 'POST', headers: await authHeader(), body: JSON.stringify({ point_id: pointId, content_type: tipo, nome }),
+    })
+    if (res.status === 503) throw new SemR2()
+    const j = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(j.error ?? `Falha ${res.status}`)
+    const put = await fetch(j.url, { method: 'PUT', body: file, headers: { 'Content-Type': tipo } })
+    if (!put.ok) throw new Error(`Falha ao enviar a foto para o armazenamento (${put.status}).`)
+    unwrap(await supabase.from('point_photos').insert({
+      point_id: pointId, r2_key: j.key, nome_arquivo: nome, content_type: tipo, tamanho_bytes: file.size, armazenamento: 'r2',
+    }))
+  } catch (e) {
+    if (!(e instanceof SemR2)) throw e
+    // R2 ainda não configurado: guarda no armazenamento do Supabase
+    const key = `contratos/${contractId}/pontos/${pointId}/${Date.now()}_${crypto.randomUUID().slice(0, 8)}.jpg`
+    const up = await supabase.storage.from('fotos').upload(key, file, { contentType: tipo, upsert: false })
+    if (up.error) throw up.error
+    unwrap(await supabase.from('point_photos').insert({
+      point_id: pointId, r2_key: key, nome_arquivo: nome, content_type: tipo, tamanho_bytes: file.size, armazenamento: 'supabase',
+    }))
+  }
 }
 
-export async function deletePhoto(photoId: string) {
-  await callApi('/api/fotos-excluir', { photo_id: photoId })
+export async function deletePhoto(foto: Photo) {
+  if (foto.armazenamento === 'supabase') {
+    unwrap(await supabase.from('point_photos').delete().eq('id', foto.id))
+    await supabase.storage.from('fotos').remove([foto.r2_key])
+    return
+  }
+  await callApi('/api/fotos-excluir', { photo_id: foto.id })
 }

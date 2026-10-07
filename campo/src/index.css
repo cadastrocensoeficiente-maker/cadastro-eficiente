@@ -161,3 +161,7 @@ input:disabled, select:disabled { background: var(--sup2); color: var(--tinta2);
   background-image: linear-gradient(45deg, transparent 50%, var(--tinta2) 50%), linear-gradient(135deg, var(--tinta2) 50%, transparent 50%);
   background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; }
 .campo-select select:invalid, .campo-select select option[value=""] { color: var(--tinta3); }
+/* Botão SINCRONIZAR */
+.sincronizar { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 14px; }
+.sinc-btn { min-height: 58px; font-size: 1.05rem; font-weight: 800; letter-spacing: .03em; background: var(--ok); border-color: var(--ok); color: #fff; }
+.sinc-btn:disabled { background: var(--sup2); border-color: var(--linha); color: var(--tinta3); opacity: 1; }

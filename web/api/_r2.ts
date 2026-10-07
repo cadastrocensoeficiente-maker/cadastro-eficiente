@@ -11,7 +11,8 @@ const PADROES: Record<string, string> = {
 
 const env = (k: string) => {
   const v = process.env[k] || PADROES[k]
-  if (!v) throw new HttpError(500, `Variável de ambiente ${k} não configurada no servidor.`)
+  // 503 = armazenamento R2 ainda não configurado: o app usa o armazenamento do Supabase.
+  if (!v) throw new HttpError(k.startsWith('R2_') ? 503 : 500, k.startsWith('R2_') ? 'Armazenamento R2 não configurado.' : `Variável de ambiente ${k} não configurada no servidor.`)
   return v
 }
 

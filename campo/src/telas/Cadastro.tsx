@@ -127,7 +127,7 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
         setLeitura(null)
         setFotos([])
         setFaltando(new Set())
-        setAviso(`Ponto salvo${navigator.onLine ? '' : ' no aparelho (será enviado quando houver sinal)'}.`)
+        setAviso('Ponto salvo no celular. Toque em SINCRONIZAR para enviar.')
         topo.current?.scrollIntoView({ behavior: 'smooth' })
         setTimeout(() => setAviso(''), 4000)
       }

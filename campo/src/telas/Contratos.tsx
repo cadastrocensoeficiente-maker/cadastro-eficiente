@@ -4,6 +4,8 @@ import { db } from '../lib/db'
 import { ouvirSync, sincronizar } from '../lib/sync'
 import type { Tela, Usuario } from '../App'
 import { useOnline } from './BarraStatus'
+import BotaoSincronizar from './Sincronizar'
+import { supabase } from '../lib/supabase'
 
 const hojeISO = () => new Date().toISOString().slice(0, 10)
 
@@ -17,10 +19,29 @@ export default function Contratos({ usuario, irPara }: { usuario: Usuario; irPar
     for (const p of pts) {
       m[p.contractId] ??= { hoje: 0, pendentes: 0 }
       if (p.criadoEm.slice(0, 10) === hoje) m[p.contractId].hoje++
-      if (p.status !== 'enviado') m[p.contractId].pendentes++
+      m[p.contractId].pendentes++
     }
     return m
   }, [usuario.id])
+
+  // Produção enviada (servidor): pontos que já saíram do celular
+  const [producao, setProducao] = useState<Record<string, { hoje: number; total: number }>>(() => {
+    try { return JSON.parse(localStorage.getItem('producao') ?? '{}') } catch { return {} }
+  })
+  const ultimoEnvio = useLiveQuery(() => db.pontos.count(), [])
+  useEffect(() => {
+    if (!online || !contratos?.length) return
+    ;(async () => {
+      const m: Record<string, { hoje: number; total: number }> = {}
+      for (const c of contratos) {
+        const { data } = await supabase.rpc('campo_minha_producao', { p_contract: c.id })
+        const r = (data as { hoje: number; total: number }[] | null)?.[0]
+        if (r) m[c.id] = { hoje: Number(r.hoje), total: Number(r.total) }
+      }
+      setProducao(m)
+      localStorage.setItem('producao', JSON.stringify(m))
+    })()
+  }, [online, contratos?.length, ultimoEnvio])
 
   const [atualizando, setAtualizando] = useState(false)
   const [msg, setMsg] = useState('')
@@ -55,6 +76,7 @@ export default function Contratos({ usuario, irPara }: { usuario: Usuario; irPar
           : 'Sem internet: usando os campos baixados por último.'}
       </p>
       {msg && <div className="alerta erro">{msg}</div>}
+      <BotaoSincronizar userId={usuario.id} />
       {contratos.length === 0 ? (
         <div className="vazio">
           <p>Nenhum contrato atribuído a você neste aparelho.</p>
@@ -72,12 +94,12 @@ export default function Contratos({ usuario, irPara }: { usuario: Usuario; irPar
                   <span className="card-sub">{[c.municipio, c.uf].filter(Boolean).join(' / ')}</span>
                 </div>
                 <div className="card-numeros">
-                  <span><b>{k?.hoje ?? 0}</b> hoje</span>
-                  {k?.pendentes ? <span className="pend"><b>{k.pendentes}</b> a enviar</span> : null}
+                  {k?.pendentes ? <span className="pend"><b>{k.pendentes}</b> no celular</span> : <span>0 no celular</span>}
+                  <span><b>{producao[c.id]?.hoje ?? 0}</b> enviados hoje</span>
                   <span className="mono">{c.colunas.length} campos</span>
                 </div>
                 <div className="card-acoes">
-                  <button className="btn" onClick={() => irPara({ nome: 'lista', contractId: c.id })}>Meus pontos</button>
+                  <button className="btn" onClick={() => irPara({ nome: 'lista', contractId: c.id })}>No celular{k?.pendentes ? ` (${k.pendentes})` : ''}</button>
                   <button className="btn primario" onClick={() => irPara({ nome: 'cadastro', contractId: c.id })} disabled={c.colunas.length === 0}>
                     + Cadastrar ponto
                   </button>

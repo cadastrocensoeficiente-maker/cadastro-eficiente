@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../lib/db'
-import { ouvirSync, sincronizar, type EstadoSync } from '../lib/sync'
+import { enviarTudo, ouvirSync, type EstadoSync } from '../lib/sync'
 import type { Usuario } from '../App'
 import { VERSAO, verificarAtualizacao, versaoTexto } from '../lib/atualizacao'
 import { NATIVO } from '../lib/config'
@@ -30,8 +30,7 @@ export default function BarraStatus({ usuario, onSair }: { usuario: Usuario; onS
       off()
     }
   }, [])
-  const pendPontos = useLiveQuery(() => db.pontos.where('status').anyOf('pendente', 'enviando').count(), [], 0)
-  const pendFotos = useLiveQuery(() => db.fotos.where('status').anyOf('pendente', 'enviando').count(), [], 0)
+  const noCelular = useLiveQuery(() => db.pontos.where('userId').equals(usuario.id).count(), [usuario.id], 0)
   const erros = useLiveQuery(async () => (await db.pontos.where('status').equals('erro').count()) + (await db.fotos.where('status').equals('erro').count()), [], 0)
   const [menu, setMenu] = useState(false)
   const [procurando, setProcurando] = useState(false)
@@ -43,14 +42,14 @@ export default function BarraStatus({ usuario, onSair }: { usuario: Usuario; onS
     <>
       <header className="barra">
         <span className={`sinal ${online ? 'on' : 'off'}`}>{online ? 'Online' : 'Offline'}</span>
-        <button className="sync" onClick={() => sincronizar({ contratos: true })} disabled={!online || sync?.rodando}>
-          {sync?.rodando ? '⟳ Enviando…' : pendPontos + pendFotos > 0 ? `⇡ ${pendPontos} ponto(s) · ${pendFotos} foto(s)` : `✓ Tudo enviado · ${ultima}`}
+        <button className="sync" onClick={() => enviarTudo()} disabled={!online || sync?.enviando || noCelular === 0}>
+          {sync?.enviando ? '⟳ Sincronizando…' : noCelular > 0 ? `⇡ Sincronizar · ${noCelular} no celular` : `✓ Tudo sincronizado · ${ultima}`}
         </button>
         <button className="menu-btn" onClick={() => setMenu(!menu)} aria-label="Menu">☰</button>
       </header>
-      {erros > 0 && <div className="faixa erro">{erros} item(ns) com erro de envio — abra a lista do contrato para corrigir.</div>}
+      {erros > 0 && <div className="faixa erro">{erros} item(ns) não foram enviados — abra "Pontos no celular" para ver o motivo e toque em SINCRONIZAR de novo.</div>}
       {sync?.precisaLogin && online && <div className="faixa aviso">Sessão expirada. Saia e entre de novo para enviar os pendentes (eles não serão perdidos).</div>}
-      {!online && <div className="faixa off">Sem internet: os cadastros ficam salvos no aparelho e serão enviados quando o sinal voltar.</div>}
+      {!online && <div className="faixa off">Sem internet: os cadastros ficam salvos no celular. Sincronize quando tiver sinal.</div>}
       {menu && (
         <div className="menu" onClick={() => setMenu(false)}>
           <div className="menu-caixa" onClick={(e) => e.stopPropagation()}>

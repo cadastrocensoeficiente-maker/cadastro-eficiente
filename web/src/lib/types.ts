@@ -83,6 +83,7 @@ export interface Photo {
   point_id: string
   contract_id: string
   r2_key: string
+  armazenamento: 'r2' | 'supabase'
   nome_arquivo: string | null
   content_type: string
   tamanho_bytes: number | null
