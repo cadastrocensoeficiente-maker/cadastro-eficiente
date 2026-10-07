@@ -240,3 +240,10 @@ label.check input { width: 18px; min-height: 18px; }
   .coluna .desc { flex-basis: 100%; order: 5; padding-left: 86px; }
   .coluna .botoes { margin-left: 0; }
 }
+
+/* ---------- Novo usuário ---------- */
+.linha-senha { display: flex; gap: 8px; }
+.linha-senha input { flex: 1; }
+.contratos-check { border: 1px solid var(--linha); border-radius: var(--raio); padding: 10px 14px; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.contratos-check legend { font-size: 0.85rem; font-weight: 500; color: var(--tinta-2); padding: 0 4px; }
+.mensagem-acesso { background: var(--superficie-2); border: 1px solid var(--linha); border-radius: var(--raio); padding: 12px 14px; white-space: pre-wrap; font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; margin: 8px 0; }
