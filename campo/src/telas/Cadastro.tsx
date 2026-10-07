@@ -35,6 +35,8 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
   const [salvando, setSalvando] = useState(false)
   const [abrindoCamera, setAbrindoCamera] = useState(false)
   const [aviso, setAviso] = useState('')
+  /** Depois de salvar: pergunta se abre um novo ponto (o formulário só limpa no "Sim"). */
+  const [salvo, setSalvo] = useState(false)
   const topo = useRef<HTMLDivElement>(null)
 
   const fotos = useLiveQuery(() => (alvoId ? db.fotos.where('localPointId').equals(alvoId).sortBy('criadaEm') : []), [alvoId])
@@ -210,16 +212,22 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
         irPara({ nome: 'lista', contractId })
       } else {
         // pronto para o próximo ponto
-        limparFormulario()
-        setAviso('Ponto salvo no celular. Toque em SINCRONIZAR para enviar.')
-        topo.current?.scrollIntoView({ behavior: 'smooth' })
-        setTimeout(() => setAviso(''), 4000)
+        // Não mexe na tela agora (evita o "pulo"): mostra a pergunta por cima.
+        setSalvo(true)
       }
     } catch (e) {
       setErro(`Não foi possível salvar no aparelho: ${(e as Error).message}`)
     } finally {
       setSalvando(false)
     }
+  }
+
+  function abrirNovoPonto() {
+    limparFormulario()
+    setSalvo(false)
+    setAviso('Ponto anterior salvo no celular. Toque em SINCRONIZAR para enviar.')
+    window.scrollTo({ top: 0, behavior: 'auto' })
+    setTimeout(() => setAviso(''), 4000)
   }
 
   async function descartarPendente() {
@@ -257,6 +265,18 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
 
   return (
     <main className="tela cadastro" ref={topo}>
+      {salvo && (
+        <div className="dialogo-fundo" role="dialog" aria-modal="true" aria-labelledby="dlg-salvo">
+          <div className="dialogo">
+            <div className="dialogo-ok">✓</div>
+            <h3 id="dlg-salvo">Ponto salvo no celular</h3>
+            <p>{fotos?.length ? `${fotos.length} foto(s) junto. ` : ''}Ele será enviado quando você tocar em SINCRONIZAR.</p>
+            <p className="dialogo-pergunta">Abrir novo ponto?</p>
+            <button type="button" className="btn primario grande" onClick={abrirNovoPonto} autoFocus>Sim, novo ponto</button>
+            <button type="button" className="btn" onClick={() => { setSalvo(false); irPara({ nome: 'lista', contractId }) }}>Não, ver pontos salvos</button>
+          </div>
+        </div>
+      )}
       <button className="voltar" onClick={voltar}>‹ Voltar</button>
       <h2 className="titulo">{contrato.nome}</h2>
       {aviso && <div className="alerta ok">{aviso}</div>}
@@ -341,7 +361,7 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
       {!somenteLeitura ? (
         <div className="rodape">
           {existente && <button className="btn perigo" onClick={descartarPendente}>Descartar</button>}
-          <button className="btn primario grande" onClick={salvar} disabled={salvando}>
+          <button className="btn primario grande" onClick={salvar} disabled={salvando || salvo || abrindoCamera}>
             {salvando ? 'Salvando…' : existente ? 'Salvar alterações' : 'Salvar e próximo'}
           </button>
         </div>
