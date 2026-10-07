@@ -45,8 +45,8 @@ export default function Equipe({ contrato }: { contrato: Contract }) {
     <div>
       <div className="explica">
         <p>
-          Os cadastradores marcados aqui veem este contrato no <b>aplicativo de campo</b> ({' '}
-          <a href={URL_APP_CAMPO} target="_blank" rel="noreferrer">{URL_APP_CAMPO.replace(/^https?:\/\//, '')}</a>). Quem não estiver na
+          Os cadastradores marcados aqui veem este contrato no <b>aplicativo de campo</b> (<a href={URL_APK}>baixar APK Android</a> ou{' '}
+          <a href={URL_APP_CAMPO} target="_blank" rel="noreferrer">versão web</a>). Quem não estiver na
           equipe não vê nem envia pontos deste contrato. Para alguém aparecer na lista, libere o papel <b>Cadastrador</b> na tela Usuários.
         </p>
       </div>
