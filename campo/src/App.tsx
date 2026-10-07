@@ -23,6 +23,18 @@ export type Tela =
   | { nome: 'lista'; contractId: string }
 
 const CHAVE_USUARIO = 'campo-usuario'
+const CHAVE_TELA = 'campo-tela'
+
+/** Tela atual guardada no aparelho: se o Android fechar o app, ele volta onde estava. */
+function telaSalva(): Tela {
+  try {
+    const t = JSON.parse(localStorage.getItem(CHAVE_TELA) ?? 'null') as Tela | null
+    if (t && (t.nome === 'contratos' || ((t.nome === 'cadastro' || t.nome === 'lista') && typeof t.contractId === 'string'))) return t
+  } catch {
+    /* ignora */
+  }
+  return { nome: 'contratos' }
+}
 
 export default function App() {
   const [usuario, setUsuario] = useState<Usuario | null>(() => {
@@ -33,7 +45,14 @@ export default function App() {
     }
   })
   const [verificando, setVerificando] = useState(true)
-  const [tela, setTela] = useState<Tela>({ nome: 'contratos' })
+  const [tela, setTela] = useState<Tela>(telaSalva)
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAVE_TELA, JSON.stringify(tela))
+    } catch {
+      /* ignora */
+    }
+  }, [tela])
   const [novaVersao, setNovaVersao] = useState(0)
 
   async function carregarPerfil(s: Session) {
@@ -84,6 +103,11 @@ export default function App() {
   }
 
   async function sair() {
+    const rascunhos = await db.rascunhos.count()
+    if (rascunhos > 0) {
+      alert('Há cadastro em andamento (não salvo) neste aparelho. Abra "+ Cadastrar ponto", salve ou toque em "Limpar formulário" antes de sair.')
+      return
+    }
     const pendentes = await db.pontos.where('status').anyOf('pendente', 'enviando', 'erro').count()
     const fotos = await db.fotos.where('status').anyOf('pendente', 'enviando', 'erro').count()
     if (pendentes + fotos > 0) {

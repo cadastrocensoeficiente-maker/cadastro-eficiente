@@ -165,3 +165,6 @@ input:disabled, select:disabled { background: var(--sup2); color: var(--tinta2);
 .sincronizar { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 14px; }
 .sinc-btn { min-height: 58px; font-size: 1.05rem; font-weight: 800; letter-spacing: .03em; background: var(--ok); border-color: var(--ok); color: #fff; }
 .sinc-btn:disabled { background: var(--sup2); border-color: var(--linha); color: var(--tinta3); opacity: 1; }
+.alerta.recuperado { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-weight: 500; }
+.alerta.recuperado .btn { min-height: 38px; padding: 6px 12px; font-size: .85rem; }
+.mini.add:disabled { opacity: .6; }

@@ -55,21 +55,40 @@ export interface FotoLocal {
   blob: Blob
   nome: string
   criadaEm: string
-  status: StatusEnvio
+  /** 'rascunho' = foto de um cadastro ainda não salvo (não é enviada). */
+  status: StatusEnvio | 'rascunho'
   erro?: string
   tentativas: number
+}
+
+/**
+ * Cadastro em andamento, gravado a cada alteração. Se o Android fechar o app
+ * (memória cheia, câmera, ligação…), ao voltar o formulário reaparece igual.
+ */
+export interface Rascunho {
+  chave: string // 'novo|contrato|usuario' ou 'edit|localId'
+  contractId: string
+  userId: string
+  localId: string // id que o ponto terá ao salvar (as fotos já usam este id)
+  valores: Record<string, Valor>
+  leitura: { latitude: number; longitude: number; precisao: number | null; em: string } | null
+  atualizadoEm: string
 }
 
 export const db = new Dexie('cadastro-campo') as Dexie & {
   contratos: EntityTable<ContratoLocal, 'id'>
   pontos: EntityTable<PontoLocal, 'localId'>
   fotos: EntityTable<FotoLocal, 'id'>
+  rascunhos: EntityTable<Rascunho, 'chave'>
 }
 
 db.version(1).stores({
   contratos: 'id, nome',
   pontos: 'localId, contractId, userId, status, criadoEm, [contractId+userId]',
   fotos: 'id, localPointId, status',
+})
+db.version(2).stores({
+  rascunhos: 'chave, contractId',
 })
 
 /** Pede ao navegador para não apagar os dados locais em caso de pouco espaço. */

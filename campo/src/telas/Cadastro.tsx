@@ -1,57 +1,102 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, type ColunaCampo, type FotoLocal, type Valor } from '../lib/db'
+import { db, type ColunaCampo, type FotoLocal, type PontoLocal, type Valor } from '../lib/db'
 import { capturarGPS, comprimirFoto, fmtGraus, type Leitura } from '../lib/geo'
 import { NATIVO } from '../lib/config'
-import { tirarFotoNativa } from '../lib/camera'
+import { fotografarPara } from '../lib/camera'
 import { sincronizar } from '../lib/sync'
 import type { Tela, Usuario } from '../App'
-
-interface FotoTemp {
-  id: string
-  blob: Blob
-  url: string
-  nome: string
-  salva?: FotoLocal
-}
 
 const vazio = (v: Valor | undefined) => v === undefined || v === null || v === ''
 
 export default function Cadastro({ usuario, contractId, localId, irPara }: {
   usuario: Usuario; contractId: string; localId?: string; irPara: (t: Tela) => void
 }) {
-  const contrato = useLiveQuery(() => db.contratos.get(contractId), [contractId])
-  const existente = useLiveQuery(() => (localId ? db.pontos.get(localId) : undefined), [localId])
-  const fotosSalvas = useLiveQuery(() => (localId ? db.fotos.where('localPointId').equals(localId).toArray() : []), [localId])
+  const contrato = useLiveQuery(() => db.contratos.get(contractId).then((c) => c ?? null), [contractId])
+  const chave = localId ? `edit|${localId}` : `novo|${contractId}|${usuario.id}`
 
+  // Tudo o que está na tela é gravado no aparelho (tabela "rascunhos") a cada
+  // alteração; as fotos vão direto para o banco. Assim, se o Android fechar o
+  // app (câmera, pouca memória), nada se perde.
+  const [carregado, setCarregado] = useState(false)
+  const [alvoId, setAlvoId] = useState('') // localId que o ponto terá / já tem
+  const [existenteInicial, setExistente] = useState<PontoLocal | undefined>()
+  const existenteVivo = useLiveQuery(() => (localId ? db.pontos.get(localId) : undefined), [localId])
+  const existente = existenteVivo ?? existenteInicial
   const [valores, setValores] = useState<Record<string, Valor>>({})
   const [leitura, setLeitura] = useState<Leitura | null>(null)
+  const [recuperado, setRecuperado] = useState(false)
+  const sujo = useRef(false)
+
   const [capturando, setCapturando] = useState(false)
   const pararGps = useRef<(() => void) | null>(null)
-  const [fotos, setFotos] = useState<FotoTemp[]>([])
   const [erro, setErro] = useState('')
   const [faltando, setFaltando] = useState<Set<string>>(new Set())
   const [salvando, setSalvando] = useState(false)
+  const [abrindoCamera, setAbrindoCamera] = useState(false)
   const [aviso, setAviso] = useState('')
   const topo = useRef<HTMLDivElement>(null)
 
-  const somenteLeitura = !!existente && (existente.status === 'enviado' || existente.status === 'enviando')
+  const fotos = useLiveQuery(() => (alvoId ? db.fotos.where('localPointId').equals(alvoId).sortBy('criadaEm') : []), [alvoId])
 
   useEffect(() => {
-    if (existente) {
-      setValores(existente.valores)
-      if (existente.latitude !== null && existente.longitude !== null) {
-        setLeitura({ latitude: existente.latitude, longitude: existente.longitude, precisao: existente.precisaoM, em: existente.capturadoEm ?? existente.criadoEm })
+    let vivo = true
+    setCarregado(false)
+    sujo.current = false
+    ;(async () => {
+      const [r, p] = await Promise.all([db.rascunhos.get(chave), localId ? db.pontos.get(localId) : undefined])
+      if (!vivo) return
+      if (localId && !p) {
+        // ponto já sincronizado e removido do aparelho
+        await db.rascunhos.delete(chave)
+        irPara({ nome: 'lista', contractId })
+        return
       }
+      setExistente(p)
+      const editavel = !p || p.status === 'pendente' || p.status === 'erro'
+      if (r && editavel) {
+        setAlvoId(r.localId)
+        setValores(r.valores)
+        setLeitura(r.leitura)
+        sujo.current = true
+        const temFoto = (await db.fotos.where({ localPointId: r.localId }).count()) > 0
+        setRecuperado(Object.values(r.valores).some((v) => !vazio(v)) || !!r.leitura || temFoto)
+      } else if (p) {
+        setAlvoId(p.localId)
+        setValores(p.valores)
+        setLeitura(p.latitude !== null && p.longitude !== null
+          ? { latitude: p.latitude, longitude: p.longitude, precisao: p.precisaoM, em: p.capturadoEm ?? p.criadoEm }
+          : null)
+      } else {
+        setAlvoId(crypto.randomUUID())
+        setValores({})
+        setLeitura(null)
+      }
+      setCarregado(true)
+    })()
+    return () => {
+      vivo = false
     }
-  }, [existente?.localId])
+  }, [chave])
+
+  const somenteLeitura = !!existente && (existente.status === 'enviado' || existente.status === 'enviando')
+
+  /** Grava o formulário no aparelho (chamado a cada alteração). */
+  async function gravarRascunho(v = valores, l = leitura) {
+    if (!carregado || !alvoId || somenteLeitura) return
+    sujo.current = true
+    await db.rascunhos.put({ chave, contractId, userId: usuario.id, localId: alvoId, valores: v, leitura: l, atualizadoEm: new Date().toISOString() })
+  }
+  useEffect(() => {
+    if (sujo.current) gravarRascunho().catch(() => {})
+  }, [valores, leitura])
 
   useEffect(() => () => pararGps.current?.(), [])
-  useEffect(() => () => fotos.forEach((f) => URL.revokeObjectURL(f.url)), [])
 
   function iniciarGPS() {
     setErro('')
     setCapturando(true)
+    sujo.current = true
     pararGps.current = capturarGPS(
       (l) => setLeitura(l),
       (l, e) => {
@@ -63,14 +108,41 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
     )
   }
 
-  async function adicionarFotos(lista: FileList | Blob[] | null) {
-    if (!lista) return
-    const novas: FotoTemp[] = []
+  /** Status das fotos novas: rascunho até salvar o ponto; direto na fila se o ponto já existe. */
+  const statusFotoNova: FotoLocal['status'] = existente ? 'pendente' : 'rascunho'
+
+  /** Navegador (sem APK): arquivo da câmera/galeria. */
+  async function adicionarArquivos(lista: FileList | null) {
+    if (!lista || !alvoId) return
     for (const arq of Array.from(lista)) {
       const blob = await comprimirFoto(arq)
-      novas.push({ id: crypto.randomUUID(), blob, url: URL.createObjectURL(blob), nome: `foto_${Date.now()}.jpg` })
+      await db.fotos.add({ id: crypto.randomUUID(), localPointId: alvoId, blob, nome: `foto_${Date.now()}.jpg`, criadaEm: new Date().toISOString(), status: statusFotoNova, tentativas: 0 })
     }
-    setFotos((f) => [...f, ...novas])
+    if (existente) sincronizar()
+    else await gravarRascunho()
+  }
+
+  /** APK: abre direto a câmera do celular. */
+  async function fotografar() {
+    if (abrindoCamera || !alvoId) return
+    setErro('')
+    setAbrindoCamera(true)
+    pararGps.current?.() // libera memória e o GPS enquanto a câmera está aberta
+    try {
+      if (!existente) await gravarRascunho() // garante o formulário salvo antes de sair para a câmera
+      await fotografarPara({ localPointId: alvoId, status: statusFotoNova })
+      if (existente) sincronizar()
+    } catch (e) {
+      setErro((e as Error).message)
+    } finally {
+      setAbrindoCamera(false)
+    }
+  }
+
+  async function removerFoto(f: FotoLocal) {
+    if (f.status === 'enviado' || f.status === 'enviando') return
+    if (!confirm('Remover esta foto?')) return
+    await db.fotos.delete(f.id)
   }
 
   function validar(colunas: ColunaCampo[]) {
@@ -85,6 +157,27 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
     return falta
   }
 
+  function limparFormulario(novoId = crypto.randomUUID()) {
+    sujo.current = false
+    setAlvoId(novoId)
+    setValores({})
+    setLeitura(null)
+    setFaltando(new Set())
+    setRecuperado(false)
+    setErro('')
+  }
+
+  async function descartarRascunho() {
+    if (!confirm('Limpar o formulário? Os dados e fotos deste cadastro (ainda não salvo) serão apagados.')) return
+    pararGps.current?.()
+    await db.transaction('rw', db.rascunhos, db.fotos, async () => {
+      await db.fotos.where('localPointId').equals(alvoId).and((f) => f.status === 'rascunho').delete()
+      await db.rascunhos.delete(chave)
+    })
+    if (existente) irPara({ nome: 'lista', contractId })
+    else limparFormulario()
+  }
+
   async function salvar() {
     if (!contrato) return
     const falta = validar(contrato.colunas)
@@ -97,36 +190,27 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
     setSalvando(true)
     setErro('')
     try {
-      const id = existente?.localId ?? crypto.randomUUID()
+      const id = alvoId
       const agora = new Date().toISOString()
-      await db.transaction('rw', db.pontos, db.fotos, async () => {
+      await db.transaction('rw', db.pontos, db.fotos, db.rascunhos, async () => {
+        const dados = {
+          valores, latitude: leitura?.latitude ?? null, longitude: leitura?.longitude ?? null,
+          precisaoM: leitura?.precisao ?? null, capturadoEm: leitura?.em ?? null,
+        }
         if (existente) {
-          await db.pontos.update(id, {
-            valores, latitude: leitura?.latitude ?? null, longitude: leitura?.longitude ?? null,
-            precisaoM: leitura?.precisao ?? null, capturadoEm: leitura?.em ?? null, status: 'pendente', erro: undefined,
-          })
+          await db.pontos.update(id, { ...dados, status: 'pendente', erro: undefined })
         } else {
-          await db.pontos.add({
-            localId: id, contractId, userId: usuario.id, valores,
-            latitude: leitura?.latitude ?? null, longitude: leitura?.longitude ?? null,
-            precisaoM: leitura?.precisao ?? null, capturadoEm: leitura?.em ?? null,
-            criadoEm: agora, status: 'pendente', tentativas: 0,
-          })
+          await db.pontos.add({ localId: id, contractId, userId: usuario.id, ...dados, criadoEm: agora, status: 'pendente', tentativas: 0 })
         }
-        for (const f of fotos) {
-          await db.fotos.add({ id: f.id, localPointId: id, blob: f.blob, nome: f.nome, criadaEm: agora, status: 'pendente', tentativas: 0 })
-        }
+        await db.fotos.where('localPointId').equals(id).and((f) => f.status === 'rascunho').modify({ status: 'pendente' })
+        await db.rascunhos.delete(chave)
       })
-      sincronizar() // tenta enviar já; se estiver offline, fica na fila
-      fotos.forEach((f) => URL.revokeObjectURL(f.url))
+      sujo.current = false
       if (existente) {
         irPara({ nome: 'lista', contractId })
       } else {
         // pronto para o próximo ponto
-        setValores({})
-        setLeitura(null)
-        setFotos([])
-        setFaltando(new Set())
+        limparFormulario()
         setAviso('Ponto salvo no celular. Toque em SINCRONIZAR para enviar.')
         topo.current?.scrollIntoView({ behavior: 'smooth' })
         setTimeout(() => setAviso(''), 4000)
@@ -138,46 +222,50 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
     }
   }
 
-  /** APK: abre direto a câmera do celular. */
-  async function fotografar() {
-    setErro('')
-    try {
-      const blob = await tirarFotoNativa()
-      if (!blob) return
-      await (somenteLeitura ? adicionarFotosEnviado : adicionarFotos)([blob])
-    } catch (e) {
-      setErro((e as Error).message)
-    }
-  }
-
-  async function adicionarFotosEnviado(lista: FileList | Blob[] | null) {
-    if (!lista || !existente) return
-    for (const arq of Array.from(lista)) {
-      const blob = await comprimirFoto(arq)
-      await db.fotos.add({ id: crypto.randomUUID(), localPointId: existente.localId, blob, nome: `foto_${Date.now()}.jpg`, criadaEm: new Date().toISOString(), status: 'pendente', tentativas: 0 })
-    }
-    sincronizar()
-  }
-
   async function descartarPendente() {
     if (!existente || existente.status === 'enviado') return
     if (!confirm('Descartar este ponto? Ele ainda não foi enviado e será apagado deste aparelho.')) return
-    await db.transaction('rw', db.pontos, db.fotos, async () => {
+    await db.transaction('rw', db.pontos, db.fotos, db.rascunhos, async () => {
       await db.fotos.where('localPointId').equals(existente.localId).delete()
       await db.pontos.delete(existente.localId)
+      await db.rascunhos.delete(chave)
     })
     irPara({ nome: 'lista', contractId })
   }
 
-  if (!contrato || (localId && existente === undefined)) return <div className="centro">Carregando…</div>
+  async function voltar() {
+    pararGps.current?.()
+    if (existente && sujo.current && !somenteLeitura) {
+      if (!confirm('Sair sem salvar as alterações deste ponto?')) return
+      await db.rascunhos.delete(chave)
+    }
+    // cadastro novo: o que foi preenchido fica guardado e reaparece ao voltar
+    irPara(localId ? { nome: 'lista', contractId } : { nome: 'contratos' })
+  }
+
+  if (contrato === null) {
+    return (
+      <main className="tela">
+        <button className="voltar" onClick={() => irPara({ nome: 'contratos' })}>‹ Contratos</button>
+        <div className="vazio">Este contrato não está mais disponível neste aparelho.</div>
+      </main>
+    )
+  }
+  if (!contrato || !carregado) return <div className="centro">Carregando…</div>
 
   const precisaoRuim = leitura?.precisao != null && leitura.precisao > 15
 
   return (
     <main className="tela cadastro" ref={topo}>
-      <button className="voltar" onClick={() => irPara(localId ? { nome: 'lista', contractId } : { nome: 'contratos' })}>‹ Voltar</button>
+      <button className="voltar" onClick={voltar}>‹ Voltar</button>
       <h2 className="titulo">{contrato.nome}</h2>
       {aviso && <div className="alerta ok">{aviso}</div>}
+      {recuperado && (
+        <div className="alerta ok recuperado">
+          <span>Cadastro em andamento recuperado — continue de onde parou.</span>
+          <button type="button" className="btn" onClick={descartarRascunho}>Limpar formulário</button>
+        </div>
+      )}
 
       {/* ID — sistema */}
       <div className="sistema">
@@ -194,6 +282,7 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
           invalido={faltando.has(c.column_id)}
           bloqueado={somenteLeitura}
           onChange={(v) => {
+            sujo.current = true
             setValores((x) => ({ ...x, [c.column_id]: v }))
             if (faltando.has(c.column_id)) setFaltando((f) => { const n = new Set(f); n.delete(c.column_id); return n })
           }}
@@ -230,22 +319,16 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
 
       {/* LINK_FOTOS — sistema */}
       <section className="fotos">
-        <div className="gps-topo"><span className="rot">LINK_FOTOS</span><span className="pequeno">{(fotosSalvas?.length ?? 0) + fotos.length} foto(s)</span></div>
+        <div className="gps-topo"><span className="rot">LINK_FOTOS</span><span className="pequeno">{fotos?.length ?? 0} foto(s)</span></div>
         <div className="fotos-grade">
-          {fotosSalvas?.map((f) => <MiniFoto key={f.id} foto={f} />)}
-          {fotos.map((f) => (
-            <div key={f.id} className="mini">
-              <img src={f.url} alt="" />
-              <button className="mini-x" onClick={() => { URL.revokeObjectURL(f.url); setFotos((x) => x.filter((y) => y.id !== f.id)) }} aria-label="Remover foto">×</button>
-            </div>
-          ))}
+          {fotos?.map((f) => <MiniFoto key={f.id} foto={f} onRemover={() => removerFoto(f)} />)}
           {NATIVO ? (
-            <button type="button" className="mini add" onClick={fotografar}>
-              <span>📷<br />Foto</span>
+            <button type="button" className="mini add" onClick={fotografar} disabled={abrindoCamera}>
+              <span>{abrindoCamera ? '…' : '📷'}<br />Foto</span>
             </button>
           ) : (
             <label className="mini add">
-              <input type="file" accept="image/*" capture="environment" onChange={(e) => { (somenteLeitura ? adicionarFotosEnviado : adicionarFotos)(e.target.files); e.target.value = '' }} />
+              <input type="file" accept="image/*" capture="environment" onChange={(e) => { adicionarArquivos(e.target.files); e.target.value = '' }} />
               <span>📷<br />Foto</span>
             </label>
           )}
@@ -269,7 +352,7 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
   )
 }
 
-function MiniFoto({ foto }: { foto: FotoLocal }) {
+function MiniFoto({ foto, onRemover }: { foto: FotoLocal; onRemover: () => void }) {
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => {
     if (foto.blob.size === 0) return
@@ -279,8 +362,11 @@ function MiniFoto({ foto }: { foto: FotoLocal }) {
   }, [foto.id, foto.blob.size])
   return (
     <div className={`mini ${foto.status}`}>
-      {url ? <img src={url} alt="" /> : <span className="mini-ok">✓<br />enviada</span>}
-      {foto.status !== 'enviado' && <span className="mini-status">{foto.status === 'erro' ? '!' : '⇡'}</span>}
+      {url ? <img src={url} alt="" decoding="async" /> : <span className="mini-ok">✓<br />enviada</span>}
+      {foto.status !== 'enviado' && foto.status !== 'rascunho' && <span className="mini-status">{foto.status === 'erro' ? '!' : '⇡'}</span>}
+      {foto.status !== 'enviado' && foto.status !== 'enviando' && (
+        <button type="button" className="mini-x" onClick={onRemover} aria-label="Remover foto">×</button>
+      )}
     </div>
   )
 }
