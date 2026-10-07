@@ -43,7 +43,7 @@ export default function BarraStatus({ usuario, onSair }: { usuario: Usuario; onS
       <header className="barra">
         <span className={`sinal ${online ? 'on' : 'off'}`}>{online ? 'Online' : 'Offline'}</span>
         <button className="sync" onClick={() => enviarTudo()} disabled={!online || sync?.enviando || noCelular === 0}>
-          {sync?.enviando ? '⟳ Sincronizando…' : noCelular > 0 ? `⇡ Sincronizar · ${noCelular} no celular` : `✓ Tudo sincronizado · ${ultima}`}
+          {sync?.enviando ? `⟳ Sincronizando…${sync.progresso?.total ? ` ${sync.progresso.feito}/${sync.progresso.total}` : ''}` : noCelular > 0 ? `⇡ Sincronizar · ${noCelular} no celular` : `✓ Tudo sincronizado · ${ultima}`}
         </button>
         <button className="menu-btn" onClick={() => setMenu(!menu)} aria-label="Menu">☰</button>
       </header>

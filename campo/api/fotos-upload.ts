@@ -10,7 +10,7 @@ export const POST = responder(async (req) => {
   const { sb, role } = await usuario(req)
   if (role !== 'admin' && role !== 'cadastrador') throw new HttpError(403, 'Seu perfil não pode enviar fotos.')
 
-  const body = (await req.json()) as { point_id?: string; content_type?: string; nome?: string }
+  const body = (await req.json()) as { point_id?: string; content_type?: string; nome?: string; ref?: string }
   if (!body.point_id) throw new HttpError(400, 'point_id é obrigatório.')
   const tipo = body.content_type ?? 'image/jpeg'
   if (!TIPOS.includes(tipo)) throw new HttpError(400, `Tipo de arquivo não aceito: ${tipo}.`)
@@ -20,7 +20,9 @@ export const POST = responder(async (req) => {
   if (!ponto) throw new HttpError(404, 'Ponto não encontrado.')
 
   const ext = tipo === 'image/png' ? 'png' : tipo === 'image/webp' ? 'webp' : tipo.startsWith('image/hei') ? 'heic' : 'jpg'
-  const key = `contratos/${ponto.contract_id}/pontos/${ponto.id}/${ponto.codigo}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`
+  // ref = id da foto no celular: o mesmo envio repetido gera a mesma chave (não duplica)
+  const ref = /^[0-9a-f-]{8,36}$/i.test(body.ref ?? '') ? body.ref! : `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`
+  const key = `contratos/${ponto.contract_id}/pontos/${ponto.id}/${ponto.codigo}_${ref}.${ext}`
   const url = await urlAssinada('PUT', key, 600, tipo)
   return { url, key }
 })

@@ -6,11 +6,12 @@ import { useOnline } from './BarraStatus'
 
 /** Quantos pontos e fotos ainda estão só no celular. */
 export function usePendentes(userId: string) {
+  // Só contagens pelos índices: não lê as fotos (o celular aguenta milhares).
   return useLiveQuery(async () => {
-    const pontos = await db.pontos.where('userId').equals(userId).toArray()
-    const ids = pontos.map((p) => p.localId)
-    const fotos = ids.length ? await db.fotos.where('localPointId').anyOf(ids).and((f) => f.status !== 'enviado').count() : 0
-    return { pontos: pontos.filter((p) => p.status !== 'enviado').length, noCelular: pontos.length, fotos }
+    const noCelular = await db.pontos.where('userId').equals(userId).count()
+    const enviados = await db.pontos.where('status').equals('enviado').and((p) => p.userId === userId).count()
+    const fotos = await db.fotos.where('status').anyOf('pendente', 'erro', 'enviando').count()
+    return { pontos: noCelular - enviados, noCelular, fotos }
   }, [userId], { pontos: 0, noCelular: 0, fotos: 0 })
 }
 
@@ -38,10 +39,26 @@ export default function BotaoSincronizar({ userId }: { userId: string }) {
       <button className="btn sinc-btn" disabled={!online || enviando || total === 0} onClick={() => enviarTudo()}>
         {enviando ? '⟳ SINCRONIZANDO…' : total === 0 ? '✓ NADA PARA SINCRONIZAR' : `⇡ SINCRONIZAR (${total} ponto${total > 1 ? 's' : ''})`}
       </button>
+      {enviando && sync?.progresso && <Progresso p={sync.progresso} />}
+      {!enviando && total > 0 && pend.fotos > 0 && <p className="nota">{pend.fotos} foto(s) a enviar.</p>}
       {!online && total > 0 && <p className="nota">Sem internet: os pontos ficam guardados no celular até você sincronizar.</p>}
       {sync?.resultado && Date.now() - sync.resultado.em < 120_000 && (
         <div className={`alerta ${sync.resultado.ok ? 'ok' : 'erro'}`}>{sync.resultado.mensagem}</div>
       )}
+    </div>
+  )
+}
+
+export function Progresso({ p }: { p: NonNullable<EstadoSync['progresso']> }) {
+  const pct = p.total ? Math.round((p.feito / p.total) * 100) : 0
+  return (
+    <div className="progresso" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+      <div className="progresso-txt">
+        <span>{p.etapa}…</span>
+        {p.total > 0 && <span className="mono">{p.feito} de {p.total}</span>}
+      </div>
+      <div className="progresso-barra"><div style={{ width: `${p.total ? pct : 100}%` }} /></div>
+      <small>Mantenha o app aberto. Se a internet cair, ele tenta de novo sozinho; nada se perde.</small>
     </div>
   )
 }

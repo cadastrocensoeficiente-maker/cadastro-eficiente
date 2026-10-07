@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type PontoLocal } from '../lib/db'
 import BotaoSincronizar from './Sincronizar'
@@ -11,21 +12,25 @@ const ROTULO: Record<PontoLocal['status'], string> = {
 }
 
 export default function Lista({ usuario, contractId, irPara }: { usuario: Usuario; contractId: string; irPara: (t: Tela) => void }) {
+  const [limite, setLimite] = useState(200)
   const contrato = useLiveQuery(() => db.contratos.get(contractId), [contractId])
   const pontos = useLiveQuery(
     () => db.pontos.where('[contractId+userId]').equals([contractId, usuario.id]).reverse().sortBy('criadoEm'),
     [contractId, usuario.id],
   )
   const fotos = useLiveQuery(async () => {
-    const ids = (pontos ?? []).map((p) => p.localId)
-    const fs = await db.fotos.where('localPointId').anyOf(ids).toArray()
+    // Lê só o índice [ponto, status] — nunca os arquivos das fotos.
+    const ids = new Set((pontos ?? []).map((p) => p.localId))
+    const chaves = (await db.fotos.orderBy('[localPointId+status]').keys()) as unknown as [string, string][]
     const m: Record<string, { total: number; pend: number; erro?: string }> = {}
-    for (const f of fs) {
-      m[f.localPointId] ??= { total: 0, pend: 0 }
-      m[f.localPointId].total++
-      if (f.status !== 'enviado') m[f.localPointId].pend++
-      if (f.status === 'erro' && f.erro) m[f.localPointId].erro = f.erro
+    for (const [lp, st] of chaves) {
+      if (!ids.has(lp) || st === 'rascunho') continue
+      m[lp] ??= { total: 0, pend: 0 }
+      m[lp].total++
+      if (st !== 'enviado') m[lp].pend++
     }
+    const comErro = await db.fotos.where('status').equals('erro').limit(200).toArray()
+    for (const f of comErro) if (m[f.localPointId] && f.erro) m[f.localPointId].erro = f.erro
     return m
   }, [pontos])
 
@@ -46,7 +51,7 @@ export default function Lista({ usuario, contractId, irPara }: { usuario: Usuari
         <div className="vazio">Nenhum ponto no celular. Tudo já foi sincronizado.</div>
       ) : (
         <ul className="lista">
-          {pontos.map((p) => {
+          {pontos.slice(0, limite).map((p) => {
             const f = fotos?.[p.localId]
             const editavel = p.status === 'pendente' || p.status === 'erro'
             return (
@@ -73,6 +78,9 @@ export default function Lista({ usuario, contractId, irPara }: { usuario: Usuari
             )
           })}
         </ul>
+      )}
+      {pontos.length > limite && (
+        <button className="btn" onClick={() => setLimite((n) => n + 200)}>Mostrar mais ({pontos.length - limite} restantes)</button>
       )}
     </main>
   )

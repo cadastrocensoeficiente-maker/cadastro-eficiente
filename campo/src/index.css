@@ -168,3 +168,8 @@ input:disabled, select:disabled { background: var(--sup2); color: var(--tinta2);
 .alerta.recuperado { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-weight: 500; }
 .alerta.recuperado .btn { min-height: 38px; padding: 6px 12px; font-size: .85rem; }
 .mini.add:disabled { opacity: .6; }
+.progresso { display: grid; gap: 6px; padding: 12px; border-radius: var(--r); background: var(--sup); border: 1px solid var(--linha); }
+.progresso-txt { display: flex; justify-content: space-between; font-weight: 700; font-size: .92rem; }
+.progresso-barra { height: 10px; border-radius: 999px; background: var(--linha); overflow: hidden; }
+.progresso-barra > div { height: 100%; background: var(--ambar); transition: width .3s; }
+.progresso small { color: var(--texto-2, #666); }

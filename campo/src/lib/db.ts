@@ -90,6 +90,10 @@ db.version(1).stores({
 db.version(2).stores({
   rascunhos: 'chave, contractId',
 })
+// Índice para contar fotos por ponto/status sem ler os arquivos (economiza memória).
+db.version(3).stores({
+  fotos: 'id, localPointId, status, [localPointId+status]',
+})
 
 /** Pede ao navegador para não apagar os dados locais em caso de pouco espaço. */
 export async function pedirArmazenamentoPersistente() {
