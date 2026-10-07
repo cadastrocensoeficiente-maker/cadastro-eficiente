@@ -228,9 +228,16 @@ function FormColuna(props: {
         </label>
         <label>
           Tipo
-          <select value={type} onChange={(e) => setType(e.target.value as ColumnType)}>
-            {COLUMN_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
+          <select
+            value={type === 'lista_unica' ? 'lista' : type}
+            onChange={(e) => {
+              const v = e.target.value as ColumnType
+              // "Lista de opções": começa como uma opção só; o admin escolhe abaixo se permite várias
+              setType(v === 'lista' ? (type === 'lista' ? 'lista' : 'lista_unica') : v)
+            }}
+          >
+            {COLUMN_TYPES.filter((t) => t.value !== 'lista_unica').map((t) => (
+              <option key={t.value} value={t.value}>{t.value === 'lista' ? 'Lista de opções' : t.label}</option>
             ))}
           </select>
         </label>
@@ -248,6 +255,19 @@ function FormColuna(props: {
           </label>
         )}
       </div>
+      {(type === 'lista' || type === 'lista_unica') && (
+        <fieldset className="modo-lista">
+          <legend>No cadastro, o cadastrador pode:</legend>
+          <label className="check">
+            <input type="radio" name="modo-lista" checked={type === 'lista_unica'} onChange={() => setType('lista_unica')} />
+            <span><b>Selecionar somente um item</b> <span className="desc">— lista que abre ao tocar (ex.: tipo de lâmpada)</span></span>
+          </label>
+          <label className="check">
+            <input type="radio" name="modo-lista" checked={type === 'lista'} onChange={() => setType('lista')} />
+            <span><b>Selecionar mais de um item</b> <span className="desc">— quadrados lado a lado, grava separado por vírgula (ex.: estado técnico)</span></span>
+          </label>
+        </fieldset>
+      )}
       {(type === 'lista' || type === 'lista_unica') && (
         <label>
           Opções (uma por linha)

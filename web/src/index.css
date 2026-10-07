@@ -263,3 +263,7 @@ label.check input { width: 18px; min-height: 18px; }
 .opcoes-multi { display: flex; flex-wrap: wrap; gap: 8px; }
 .opcoes-multi button { min-height: 44px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--linha); background: var(--superficie); font: inherit; font-weight: 500; color: var(--tinta-2); cursor: pointer; }
 .opcoes-multi button.ativo { background: var(--ambar); border-color: var(--ambar); color: #fff; }
+.modo-lista { border: 1px solid var(--linha); border-radius: var(--raio); padding: 10px 14px; margin: 0 0 12px; display: flex; flex-direction: column; gap: 8px; }
+.modo-lista legend { font-size: 0.85rem; font-weight: 500; color: var(--tinta-2); padding: 0 4px; }
+.modo-lista label.check { align-items: flex-start; }
+.modo-lista input[type=radio] { width: 18px; min-height: 18px; margin-top: 2px; }

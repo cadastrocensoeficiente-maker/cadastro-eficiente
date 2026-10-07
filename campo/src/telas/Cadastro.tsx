@@ -338,26 +338,12 @@ function Campo({ col, valor, invalido, bloqueado, onChange }: {
     )
   }
   if (col.tipo === 'lista_unica') {
-    // poucas opções: botões grandes (mais rápido com luva/sol); muitas: lista
-    if (col.opcoes.length > 0 && col.opcoes.length <= 6) {
-      return (
-        <div className={cls}>
-          {rot}
-          <div className="opcoes">
-            {col.opcoes.map((o) => (
-              <button key={o} type="button" disabled={bloqueado} className={v === o ? 'ativo' : ''} onClick={() => onChange(v === o ? null : o)}>
-                {o}
-              </button>
-            ))}
-          </div>
-        </div>
-      )
-    }
+    // um item só: lista que abre ao tocar e o cadastrador escolhe
     return (
-      <label className={cls}>
+      <label className={`${cls} campo-select`}>
         {rot}
         <select value={v} disabled={bloqueado} onChange={(e) => onChange(e.target.value || null)}>
-          <option value="">— selecione —</option>
+          <option value="">Toque para selecionar…</option>
           {col.opcoes.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       </label>

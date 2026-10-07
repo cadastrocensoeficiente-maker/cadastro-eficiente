@@ -27,8 +27,8 @@ export const COLUMN_TYPES: { value: ColumnType; label: string }[] = [
   { value: 'inteiro', label: 'Número inteiro' },
   { value: 'data', label: 'Data' },
   { value: 'booleano', label: 'Sim / Não' },
-  { value: 'lista', label: 'Lista (marcar uma ou várias)' },
-  { value: 'lista_unica', label: 'Lista (uma opção só)' },
+  { value: 'lista', label: 'Lista (vários itens)' },
+  { value: 'lista_unica', label: 'Lista (um item)' },
 ]
 
 export interface ContractColumn {

@@ -156,3 +156,8 @@ input:disabled, select:disabled { background: var(--sup2); color: var(--tinta2);
   max-width: 640px; margin: 0 auto; }
 .mini.add { font: inherit; cursor: pointer; }
 .faixa.atualizacao { display: block; width: 100%; border: 0; text-align: left; font: inherit; font-size: .88rem; font-weight: 600; background: var(--ok-cl); color: var(--ok); cursor: pointer; }
+/* Lista de um item: caixa que abre a lista do celular */
+.campo-select select { appearance: none; -webkit-appearance: none; padding-right: 44px; font-weight: 600;
+  background-image: linear-gradient(45deg, transparent 50%, var(--tinta2) 50%), linear-gradient(135deg, var(--tinta2) 50%, transparent 50%);
+  background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; }
+.campo-select select:invalid, .campo-select select option[value=""] { color: var(--tinta3); }
