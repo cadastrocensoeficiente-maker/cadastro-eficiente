@@ -57,7 +57,6 @@ export default function Contratos() {
             <Link key={c.id} to={`/contratos/${c.id}`} className="card-contrato">
               <span className="card-titulo">{c.nome}</span>
               <span className="card-sub">{[c.municipio, c.uf].filter(Boolean).join(' / ')}</span>
-              <span className="card-meta mono">EPSG {c.epsg}</span>
               {!c.ativo && <span className="etiqueta">inativo</span>}
             </Link>
           ))}
@@ -79,8 +78,7 @@ export function ContratoForm({ contrato, onFechar, onSalvo }: { contrato?: Contr
 
   async function salvar(e: FormEvent) {
     e.preventDefault()
-    if (contrato && epsg !== contrato.epsg && !confirm('Mudar o EPSG recalcula TMX/TMY de TODOS os pontos deste contrato. Continuar?')) return
-    setSalvando(true)
+        setSalvando(true)
     setErro('')
     try {
       onSalvo(await saveContract({ id: contrato?.id, nome: nome.trim().toUpperCase(), municipio, uf, epsg, id_digitos: digitos, ativo }))
@@ -110,7 +108,7 @@ export function ContratoForm({ contrato, onFechar, onSalvo }: { contrato?: Contr
       </div>
       <div className="linha-campos">
         <label>
-          Sistema de coordenadas (TMX/TMY)
+          Fuso UTM (só para importar planilhas antigas em X/Y)
           <select
             value={EPSG_SUGERIDOS.some((s) => s.epsg === epsg) ? epsg : 'outro'}
             onChange={(e) => e.target.value !== 'outro' && setEpsg(Number(e.target.value))}

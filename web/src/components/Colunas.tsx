@@ -9,7 +9,7 @@ import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { COLUMN_TYPES, type ColumnType, type Contract, type ContractColumn } from '../lib/types'
 
-const SISTEMA_FINAL = ['TMX', 'TMY', 'LINK_FOTOS']
+const SISTEMA_FINAL = ['LATITUDE', 'LONGITUDE', 'LINK_FOTOS']
 
 export default function Colunas({ contrato, onMudou }: { contrato: Contract; onMudou: () => void }) {
   const { isAdmin } = useAuth()
@@ -80,7 +80,7 @@ export default function Colunas({ contrato, onMudou }: { contrato: Contract; onM
     <div className="colunas">
       <div className="explica">
         <p>
-          <b>ID, TMX, TMY e LINK_FOTOS</b> são colunas do sistema: fixas, sempre presentes e fora da numeração.
+          <b>ID, LATITUDE, LONGITUDE e LINK_FOTOS</b> são colunas do sistema: fixas, sempre presentes e fora da numeração.
           As colunas configuráveis seguem sempre a sequência <b>1, 2, 3…</b> sem buracos: o sistema renumera sozinho ao criar,
           remover ou arrastar.
         </p>
@@ -121,7 +121,7 @@ export default function Colunas({ contrato, onMudou }: { contrato: Contract; onM
         </DndContext>
         {colunas.length === 0 && <li className="coluna vazia">Nenhuma coluna configurável ainda.</li>}
         {SISTEMA_FINAL.map((n) => (
-          <LinhaSistema key={n} nome={n} desc={n === 'LINK_FOTOS' ? 'Galeria de fotos do ponto (Cloudflare R2)' : `Calculado da localização · EPSG ${contrato.epsg}`} />
+          <LinhaSistema key={n} nome={n} desc={n === 'LINK_FOTOS' ? 'Galeria de fotos do ponto (Cloudflare R2)' : 'Capturada pelo GPS · graus decimais (WGS84 / EPSG:4326, pronto para o QGIS)'} />
         ))}
       </ol>
 
@@ -183,7 +183,7 @@ function ItemColuna(props: {
       <span className="desc">
         {tipo}
         {c.required && <em className="obrig"> · obrigatória</em>}
-        {c.type === 'lista' && c.options.length > 0 && <> · {c.options.join(', ')}</>}
+        {(c.type === 'lista' || c.type === 'lista_unica') && c.options.length > 0 && <> · {c.options.join(', ')}</>}
       </span>
       {admin && (
         <span className="botoes">
@@ -214,7 +214,7 @@ function FormColuna(props: {
   async function enviar(e: FormEvent) {
     e.preventDefault()
     setSalvando(true)
-    const opts = type === 'lista' ? opcoes.split(/[\n;]/).map((s) => s.trim()).filter(Boolean) : []
+    const opts = type === 'lista' || type === 'lista_unica' ? opcoes.split(/[\n;,]/).map((s) => s.trim()).filter(Boolean) : []
     await props.onSalvar(label, type, required, opts, posicao === 'fim' ? null : Number(posicao))
     setSalvando(false)
   }
@@ -248,7 +248,7 @@ function FormColuna(props: {
           </label>
         )}
       </div>
-      {type === 'lista' && (
+      {(type === 'lista' || type === 'lista_unica') && (
         <label>
           Opções (uma por linha)
           <textarea rows={4} value={opcoes} onChange={(e) => setOpcoes(e.target.value)} placeholder={'LED\nVAPOR DE SÓDIO\nMETÁLICA'} />

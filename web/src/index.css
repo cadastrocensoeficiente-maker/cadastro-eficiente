@@ -258,3 +258,8 @@ label.check input { width: 18px; min-height: 18px; }
 .secao-senha .linha-senha { max-width: 520px; }
 .linha-acao { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .secao-senha > .btn { align-self: flex-start; }
+
+/* ---------- Lista com várias opções ---------- */
+.opcoes-multi { display: flex; flex-wrap: wrap; gap: 8px; }
+.opcoes-multi button { min-height: 44px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--linha); background: var(--superficie); font: inherit; font-weight: 500; color: var(--tinta-2); cursor: pointer; }
+.opcoes-multi button.ativo { background: var(--ambar); border-color: var(--ambar); color: #fff; }

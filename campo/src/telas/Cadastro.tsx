@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type ColunaCampo, type FotoLocal, type Valor } from '../lib/db'
-import { capturarGPS, comprimirFoto, fmt3, previaTM, type Leitura } from '../lib/geo'
+import { capturarGPS, comprimirFoto, fmtGraus, type Leitura } from '../lib/geo'
+import { NATIVO } from '../lib/config'
+import { tirarFotoNativa } from '../lib/camera'
 import { sincronizar } from '../lib/sync'
 import type { Tela, Usuario } from '../App'
 
@@ -47,11 +49,6 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
   useEffect(() => () => pararGps.current?.(), [])
   useEffect(() => () => fotos.forEach((f) => URL.revokeObjectURL(f.url)), [])
 
-  const previa = useMemo(
-    () => (leitura && contrato ? previaTM(leitura.latitude, leitura.longitude, contrato.proj4) : null),
-    [leitura, contrato],
-  )
-
   function iniciarGPS() {
     setErro('')
     setCapturando(true)
@@ -66,7 +63,7 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
     )
   }
 
-  async function adicionarFotos(lista: FileList | null) {
+  async function adicionarFotos(lista: FileList | Blob[] | null) {
     if (!lista) return
     const novas: FotoTemp[] = []
     for (const arq of Array.from(lista)) {
@@ -95,7 +92,7 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
       setErro(`Verifique: ${contrato.colunas.filter((c) => falta.has(c.column_id)).map((c) => c.rotulo).join(', ')}`)
       return
     }
-    if (!leitura && !confirm('Salvar sem localização? TMX e TMY ficarão vazios.')) return
+    if (!leitura && !confirm('Salvar sem localização? LATITUDE e LONGITUDE ficarão vazias.')) return
     pararGps.current?.()
     setSalvando(true)
     setErro('')
@@ -141,7 +138,19 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
     }
   }
 
-  async function adicionarFotosEnviado(lista: FileList | null) {
+  /** APK: abre direto a câmera do celular. */
+  async function fotografar() {
+    setErro('')
+    try {
+      const blob = await tirarFotoNativa()
+      if (!blob) return
+      await (somenteLeitura ? adicionarFotosEnviado : adicionarFotos)([blob])
+    } catch (e) {
+      setErro((e as Error).message)
+    }
+  }
+
+  async function adicionarFotosEnviado(lista: FileList | Blob[] | null) {
     if (!lista || !existente) return
     for (const arq of Array.from(lista)) {
       const blob = await comprimirFoto(arq)
@@ -191,15 +200,15 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
         />
       ))}
 
-      {/* TMX / TMY — sistema */}
+      {/* LATITUDE / LONGITUDE — sistema */}
       <section className="gps">
         <div className="gps-topo">
-          <span className="rot">TMX · TMY</span>
-          <span className="mono pequeno">EPSG {contrato.epsg}</span>
+          <span className="rot">LATITUDE · LONGITUDE</span>
+          <span className="mono pequeno">graus decimais · WGS84</span>
         </div>
         <div className="gps-valores">
-          <div><small>TMX</small><span className="mono">{existente?.tmx !== undefined ? fmt3(existente.tmx) : fmt3(previa?.tmx)}</span></div>
-          <div><small>TMY</small><span className="mono">{existente?.tmy !== undefined ? fmt3(existente.tmy) : fmt3(previa?.tmy)}</span></div>
+          <div><small>LATITUDE</small><span className="mono">{fmtGraus(leitura?.latitude)}</span></div>
+          <div><small>LONGITUDE</small><span className="mono">{fmtGraus(leitura?.longitude)}</span></div>
         </div>
         {leitura && (
           <p className={`precisao ${precisaoRuim ? 'ruim' : 'boa'}`}>
@@ -217,7 +226,6 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
               📍 {leitura ? 'CAPTURAR NOVAMENTE' : 'CAPTURAR LOCALIZAÇÃO'}
             </button>
           ))}
-        {!existente?.codigo && <p className="nota">Prévia calculada no aparelho. O valor oficial é confirmado no envio.</p>}
       </section>
 
       {/* LINK_FOTOS — sistema */}
@@ -231,10 +239,16 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
               <button className="mini-x" onClick={() => { URL.revokeObjectURL(f.url); setFotos((x) => x.filter((y) => y.id !== f.id)) }} aria-label="Remover foto">×</button>
             </div>
           ))}
-          <label className="mini add">
-            <input type="file" accept="image/*" capture="environment" onChange={(e) => { (somenteLeitura ? adicionarFotosEnviado : adicionarFotos)(e.target.files); e.target.value = '' }} />
-            <span>📷<br />Foto</span>
-          </label>
+          {NATIVO ? (
+            <button type="button" className="mini add" onClick={fotografar}>
+              <span>📷<br />Foto</span>
+            </button>
+          ) : (
+            <label className="mini add">
+              <input type="file" accept="image/*" capture="environment" onChange={(e) => { (somenteLeitura ? adicionarFotosEnviado : adicionarFotos)(e.target.files); e.target.value = '' }} />
+              <span>📷<br />Foto</span>
+            </label>
+          )}
         </div>
       </section>
 
@@ -299,6 +313,31 @@ function Campo({ col, valor, invalido, bloqueado, onChange }: {
     )
   }
   if (col.tipo === 'lista') {
+    // várias opções: cada toque marca/desmarca; grava "A, B" na ordem das opções
+    const marcados = v ? v.split(',').map((x) => x.trim()).filter(Boolean) : []
+    const alternar = (o: string) => {
+      const novo = marcados.includes(o) ? marcados.filter((x) => x !== o) : [...marcados, o]
+      const ordem = col.opcoes.filter((x) => novo.includes(x))
+      onChange(ordem.length ? ordem.join(', ') : null)
+    }
+    return (
+      <div className={cls}>
+        {rot}
+        <div className="opcoes">
+          {col.opcoes.map((o) => {
+            const ativo = marcados.includes(o)
+            return (
+              <button key={o} type="button" disabled={bloqueado} className={ativo ? 'ativo' : ''} aria-pressed={ativo} onClick={() => alternar(o)}>
+                {ativo ? '✓ ' : ''}{o}
+              </button>
+            )
+          })}
+        </div>
+        <span className="pequeno">Pode marcar mais de uma opção{marcados.length > 1 ? ` · ${marcados.length} marcadas` : ''}.</span>
+      </div>
+    )
+  }
+  if (col.tipo === 'lista_unica') {
     // poucas opções: botões grandes (mais rápido com luva/sol); muitas: lista
     if (col.opcoes.length > 0 && col.opcoes.length <= 6) {
       return (

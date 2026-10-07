@@ -58,7 +58,7 @@ export default function Importar({ contrato, layout }: { contrato: Contract; lay
         inseridos += r.inseridos
         semCoord += r.sem_coordenada
       }
-      setResultado(`${inseridos.toLocaleString('pt-BR')} ponto(s) importado(s).` + (semCoord ? ` ${semCoord} sem coordenada (TMX/TMY ficaram vazios).` : ''))
+      setResultado(`${inseridos.toLocaleString('pt-BR')} ponto(s) importado(s).` + (semCoord ? ` ${semCoord} sem coordenada (latitude/longitude vazias).` : ''))
       setPlanilha(null)
     } catch (e) {
       setErro(`Parou após ${inseridos.toLocaleString('pt-BR')} ponto(s) importados. Erro: ${msgErro(e)}`)
@@ -72,8 +72,9 @@ export default function Importar({ contrato, layout }: { contrato: Contract; lay
       <div className="explica">
         <p>
           Cada linha da planilha vira um <b>ponto novo</b>. O <b>ID</b> é sempre gerado pelo sistema (o da planilha é ignorado) e
-          <b> LINK_FOTOS</b> é criado automaticamente. <b>TMX/TMY</b> são recalculados pelo sistema: se a planilha tiver latitude/longitude
-          elas são usadas; se tiver só TMX/TMY, o sistema converte assumindo <span className="mono">EPSG {contrato.epsg}</span>.
+          <b> LINK_FOTOS</b> é criado automaticamente. <b>LATITUDE/LONGITUDE</b> vêm da planilha em graus decimais; se a planilha tiver só coordenadas UTM (X/Y), o sistema
+          converte para latitude/longitude usando o fuso definido em Dados do contrato (<span className="mono">EPSG {contrato.epsg}</span>).
+          Em colunas do tipo lista, várias opções vêm separadas por vírgula.
         </p>
       </div>
       {configuraveis.length === 0 && <div className="alerta aviso">Crie as colunas do contrato antes de importar.</div>}
@@ -127,8 +128,8 @@ export default function Importar({ contrato, layout }: { contrato: Contract; lay
                           <optgroup label="Localização (convertida pelo sistema)">
                             <option value="latitude">Latitude</option>
                             <option value="longitude">Longitude</option>
-                            <option value="tmx">TMX (EPSG {contrato.epsg})</option>
-                            <option value="tmy">TMY (EPSG {contrato.epsg})</option>
+                            <option value="tmx">UTM X / Leste (converter, EPSG {contrato.epsg})</option>
+                            <option value="tmy">UTM Y / Norte (converter, EPSG {contrato.epsg})</option>
                           </optgroup>
                         </select>
                       )}
@@ -138,7 +139,7 @@ export default function Importar({ contrato, layout }: { contrato: Contract; lay
               })}
             </tbody>
           </table>
-          {!temCoord && <div className="alerta aviso">Nenhuma coordenada mapeada: os pontos entrarão sem TMX/TMY.</div>}
+          {!temCoord && <div className="alerta aviso">Nenhuma coordenada mapeada: os pontos entrarão sem latitude/longitude.</div>}
           {repetidos.length > 0 && <div className="alerta erro">Há destinos repetidos no mapeamento.</div>}
           <div className="acoes">
             <button className="btn" onClick={() => setPlanilha(null)}>Cancelar</button>

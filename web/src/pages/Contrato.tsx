@@ -56,7 +56,7 @@ export default function Contrato() {
         <div>
           <h1>{contrato.nome}</h1>
           <p className="sub">
-            {[contrato.municipio, contrato.uf].filter(Boolean).join(' / ')} · <span className="mono">EPSG {contrato.epsg}</span>
+            {[contrato.municipio, contrato.uf].filter(Boolean).join(' / ')}
           </p>
         </div>
       </div>

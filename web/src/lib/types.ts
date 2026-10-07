@@ -19,7 +19,7 @@ export interface Contract {
   created_at: string
 }
 
-export type ColumnType = 'texto' | 'numero' | 'inteiro' | 'data' | 'booleano' | 'lista'
+export type ColumnType = 'texto' | 'numero' | 'inteiro' | 'data' | 'booleano' | 'lista' | 'lista_unica'
 
 export const COLUMN_TYPES: { value: ColumnType; label: string }[] = [
   { value: 'texto', label: 'Texto' },
@@ -27,7 +27,8 @@ export const COLUMN_TYPES: { value: ColumnType; label: string }[] = [
   { value: 'inteiro', label: 'Número inteiro' },
   { value: 'data', label: 'Data' },
   { value: 'booleano', label: 'Sim / Não' },
-  { value: 'lista', label: 'Lista de opções' },
+  { value: 'lista', label: 'Lista (marcar uma ou várias)' },
+  { value: 'lista_unica', label: 'Lista (uma opção só)' },
 ]
 
 export interface ContractColumn {
@@ -41,7 +42,7 @@ export interface ContractColumn {
   position: number
 }
 
-/** Linha de contract_layout(): ordem oficial ID · 1..N · TMX · TMY · LINK_FOTOS */
+/** Linha de contract_layout(): ordem oficial ID · 1..N · LATITUDE · LONGITUDE · LINK_FOTOS */
 export interface LayoutItem {
   ordem: number
   chave: string
@@ -64,6 +65,8 @@ export interface PointRow {
   valores: Record<string, Valor>
   TMX: number | null
   TMY: number | null
+  LATITUDE: number | null
+  LONGITUDE: number | null
   LINK_FOTOS: string
   total_fotos: number
   latitude: number | null
@@ -84,4 +87,12 @@ export interface Photo {
   content_type: string
   tamanho_bytes: number | null
   created_at: string
+}
+
+/** Lista múltipla: valor gravado como "A, B" na ordem das opções. */
+export const separarLista = (v: unknown): string[] =>
+  v === null || v === undefined || v === '' ? [] : String(v).split(',').map((x) => x.trim()).filter(Boolean)
+export const juntarLista = (itens: string[], opcoes: string[]) => {
+  const ordem = opcoes.length ? opcoes.filter((o) => itens.includes(o)) : itens
+  return ordem.length ? ordem.join(', ') : null
 }

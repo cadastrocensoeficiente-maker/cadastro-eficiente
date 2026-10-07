@@ -25,7 +25,7 @@ function formatarValor(v: Valor | undefined, tipo: string): string | number | bo
 
 /**
  * Exportação: ordem OBRIGATÓRIA vem de contract_layout():
- * ID · configuráveis 1..N · TMX · TMY · LINK_FOTOS
+ * ID · configuráveis 1..N · LATITUDE · LONGITUDE · LINK_FOTOS
  */
 export async function exportarXlsx(nomeContrato: string, layout: LayoutItem[], pontos: PointRow[], origem: string) {
   const wb = new ExcelJS.Workbook()
@@ -45,10 +45,10 @@ export async function exportarXlsx(nomeContrato: string, layout: LayoutItem[], p
       switch (c.chave) {
         case 'ID':
           return p.ID
-        case 'TMX':
-          return p.TMX === null ? null : Number(p.TMX)
-        case 'TMY':
-          return p.TMY === null ? null : Number(p.TMY)
+        case 'LATITUDE':
+          return p.latitude === null ? null : Math.round(Number(p.latitude) * 1e7) / 1e7
+        case 'LONGITUDE':
+          return p.longitude === null ? null : Math.round(Number(p.longitude) * 1e7) / 1e7
         case 'LINK_FOTOS':
           return { text: p.total_fotos > 0 ? `📷 Ver fotos (${p.total_fotos})` : '📷 Ver fotos', hyperlink: origem + p.LINK_FOTOS }
         default:
@@ -63,7 +63,7 @@ export async function exportarXlsx(nomeContrato: string, layout: LayoutItem[], p
   header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2A37' } }
   ordenado.forEach((c, i) => {
     if (c.sistema) ws.getRow(1).getCell(i + 1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } }
-    if (c.chave === 'TMX' || c.chave === 'TMY') ws.getColumn(i + 1).numFmt = '0.000'
+    if (c.chave === 'LATITUDE' || c.chave === 'LONGITUDE') ws.getColumn(i + 1).numFmt = '0.0000000'
     if (c.tipo === 'data') ws.getColumn(i + 1).numFmt = 'dd/mm/yyyy'
     if (c.chave === 'ID') ws.getColumn(i + 1).numFmt = '@'
   })

@@ -36,6 +36,13 @@
         </provider>
     </application>
 
+    <!-- Android 11+: permite encontrar o app de câmera do celular -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />

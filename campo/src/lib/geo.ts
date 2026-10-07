@@ -13,6 +13,9 @@ export function previaTM(lat: number, lon: number, proj4def: string): { tmx: num
   }
 }
 
+export const fmtGraus = (n: number | null | undefined) =>
+  n === null || n === undefined ? '—' : n.toFixed(7)
+
 export const fmt3 = (n: number | null | undefined) =>
   n === null || n === undefined ? '—' : n.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 
@@ -73,7 +76,7 @@ export function capturarGPS(
 }
 
 /** Reduz a foto para no máximo 1920 px, JPEG 80% — economiza espaço e dados. */
-export async function comprimirFoto(arquivo: File): Promise<Blob> {
+export async function comprimirFoto(arquivo: Blob): Promise<Blob> {
   try {
     const bmp = await createImageBitmap(arquivo, { imageOrientation: 'from-image' })
     const max = 1920

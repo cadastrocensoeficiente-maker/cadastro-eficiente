@@ -15,6 +15,9 @@ export function exibirValor(v: Valor | undefined, tipo: string): string {
   return String(v)
 }
 
+export const fmtGraus = (n: number | null | undefined) =>
+  n === null || n === undefined ? '—' : Number(n).toFixed(7)
+
 export const fmtCoord = (n: number | null) =>
   n === null || n === undefined ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 
@@ -113,10 +116,10 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
                     switch (c.chave) {
                       case 'ID':
                         return <td key="ID" className="mono forte">{p.ID}</td>
-                      case 'TMX':
-                        return <td key="TMX" className="mono num">{fmtCoord(p.TMX)}</td>
-                      case 'TMY':
-                        return <td key="TMY" className="mono num">{fmtCoord(p.TMY)}</td>
+                      case 'LATITUDE':
+                        return <td key="LATITUDE" className="mono num">{fmtGraus(p.latitude)}</td>
+                      case 'LONGITUDE':
+                        return <td key="LONGITUDE" className="mono num">{fmtGraus(p.longitude)}</td>
                       case 'LINK_FOTOS':
                         return (
                           <td key="LINK_FOTOS" onClick={(e) => e.stopPropagation()}>

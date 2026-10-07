@@ -154,3 +154,4 @@ input:disabled, select:disabled { background: var(--sup2); color: var(--tinta2);
 .rodape { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 10px; padding: 12px 14px;
   padding-bottom: max(12px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--fundo) 25%); z-index: 10;
   max-width: 640px; margin: 0 auto; }
+.mini.add { font: inherit; cursor: pointer; }

@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { createPoint, deletePoint, getContract, getLayout, getPoint, previewCoord, updatePoint } from '../lib/api'
+import { createPoint, deletePoint, getContract, getLayout, getPoint, updatePoint } from '../lib/api'
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import type { Contract, LayoutItem, PointRow, Valor } from '../lib/types'
-import { fmtCoord } from '../components/TabelaPontos'
+import { juntarLista, separarLista, type Contract, type LayoutItem, type PointRow, type Valor } from '../lib/types'
+import { fmtGraus } from '../components/TabelaPontos'
 
 interface Local {
   latitude: number
@@ -23,7 +23,6 @@ export default function PontoForm() {
   const [ponto, setPonto] = useState<PointRow | null>(null)
   const [valores, setValores] = useState<Record<string, Valor>>({})
   const [local, setLocal] = useState<Local | null>(null)
-  const [preview, setPreview] = useState<{ tmx: number; tmy: number } | null>(null)
   const [capturando, setCapturando] = useState(false)
   const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
@@ -40,7 +39,6 @@ export default function PontoForm() {
           setValores(p.valores ?? {})
           if (p.latitude !== null && p.longitude !== null) {
             setLocal({ latitude: p.latitude, longitude: p.longitude, precisao_m: p.precisao_m, capturado_em: p.capturado_em ?? p.created_at })
-            setPreview({ tmx: Number(p.TMX), tmy: Number(p.TMY) })
           }
         }
       } catch (e) {
@@ -65,12 +63,6 @@ export default function PontoForm() {
           capturado_em: new Date(pos.timestamp).toISOString(),
         }
         setLocal(l)
-        try {
-          const p = await previewCoord(contractId!, l.latitude, l.longitude)
-          setPreview({ tmx: Number(p.tmx), tmy: Number(p.tmy) })
-        } catch (e) {
-          setErro(msgErro(e))
-        }
         setCapturando(false)
       },
       (err) => {
@@ -114,7 +106,6 @@ export default function PontoForm() {
       else if (depois === 'novo') {
         setValores({})
         setLocal(null)
-        setPreview(null)
         navigate(`/contratos/${contractId}/pontos/novo`, { replace: true })
         window.scrollTo(0, 0)
       } else navigate(`/contratos/${contractId}`)
@@ -163,28 +154,25 @@ export default function PontoForm() {
           />
         ))}
 
-        {/* TMX / TMY — sistema */}
+        {/* LATITUDE / LONGITUDE — sistema */}
         <div className="bloco-gps">
           <div className="gps-cabecalho">
-            <span className="rotulo-sistema">TMX · TMY</span>
-            <span className="desc mono">EPSG {contrato.epsg}</span>
+            <span className="rotulo-sistema">LATITUDE · LONGITUDE</span>
+            <span className="desc mono">graus decimais · WGS84</span>
           </div>
           <div className="gps-valores">
             <div>
-              <small>TMX</small>
-              <span className="mono">{preview ? fmtCoord(preview.tmx) : '—'}</span>
+              <small>LATITUDE</small>
+              <span className="mono">{fmtGraus(local?.latitude)}</span>
             </div>
             <div>
-              <small>TMY</small>
-              <span className="mono">{preview ? fmtCoord(preview.tmy) : '—'}</span>
+              <small>LONGITUDE</small>
+              <span className="mono">{fmtGraus(local?.longitude)}</span>
             </div>
           </div>
-          {local && (
+          {local?.precisao_m != null && (
             <p className="desc">
-              Lat {local.latitude.toFixed(7)} · Long {local.longitude.toFixed(7)}
-              {local.precisao_m !== null && (
-                <span className={local.precisao_m > 15 ? 'precisao ruim' : 'precisao boa'}> · precisão ±{local.precisao_m.toFixed(1)} m</span>
-              )}
+              <span className={local.precisao_m > 15 ? 'precisao ruim' : 'precisao boa'}>Precisão do GPS ±{Number(local.precisao_m).toFixed(1)} m</span>
             </p>
           )}
           {!somenteLeitura && (
@@ -254,7 +242,33 @@ function Campo({ item, valor, desabilitado, onChange }: { item: LayoutItem; valo
           </div>
         </div>
       )
-    case 'lista':
+    case 'lista': {
+      const marcados = separarLista(valor)
+      return (
+        <div className="campo">
+          {rotulo}
+          <div className="opcoes-multi">
+            {item.opcoes.map((o) => {
+              const ativo = marcados.includes(o)
+              return (
+                <button
+                  type="button"
+                  key={o}
+                  disabled={desabilitado}
+                  className={ativo ? 'ativo' : ''}
+                  aria-pressed={ativo}
+                  onClick={() => onChange(juntarLista(ativo ? marcados.filter((x) => x !== o) : [...marcados, o], item.opcoes))}
+                >
+                  {ativo ? '✓ ' : ''}{o}
+                </button>
+              )
+            })}
+          </div>
+          <span className="desc">Pode marcar mais de uma opção.</span>
+        </div>
+      )
+    }
+    case 'lista_unica':
       return (
         <label className="campo">
           {rotulo}

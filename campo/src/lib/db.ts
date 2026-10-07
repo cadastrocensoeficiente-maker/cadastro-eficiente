@@ -2,7 +2,7 @@
 // primeiro e só depois é enviado ao servidor — o app funciona sem internet.
 import Dexie, { type EntityTable } from 'dexie'
 
-export type TipoColuna = 'texto' | 'numero' | 'inteiro' | 'data' | 'booleano' | 'lista'
+export type TipoColuna = 'texto' | 'numero' | 'inteiro' | 'data' | 'booleano' | 'lista' | 'lista_unica'
 export type Valor = string | number | boolean | null
 
 /** Coluna configurável, na sequência oficial do contrato (1..N). */

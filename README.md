@@ -6,11 +6,11 @@ Cadastro de pontos de iluminação pública por contrato. Cada contrato tem colu
 
 | Grupo | Colunas | Quem controla |
 |---|---|---|
-| Sistêmicas | `ID`, `TMX`, `TMY`, `LINK_FOTOS` | O sistema. Não podem ser excluídas, renomeadas, movidas nem digitadas. |
+| Sistêmicas | `ID`, `LATITUDE`, `LONGITUDE`, `LINK_FOTOS` | O sistema. Não podem ser excluídas, renomeadas, movidas nem digitadas. |
 | Configuráveis | Sequência `1, 2, 3 … N` | O administrador escolhe a ordem; o banco mantém a sequência sem buracos. |
 
 Ordem oficial em tela, exportação, importação e app de campo:
-`ID · configuráveis 1..N · TMX · TMY · LINK_FOTOS`.
+`ID · configuráveis 1..N · LATITUDE · LONGITUDE · LINK_FOTOS`.
 Essa ordem sai sempre da função `contract_layout(contract_id)`.
 
 O banco aplica a regra assim:
