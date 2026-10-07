@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { listAllPoints, listPoints } from '../lib/api'
+import { deletePoints, listAllPoints, listPoints, restorePoints } from '../lib/api'
+import Lixeira from './Lixeira'
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import type { Contract, LayoutItem, PointRow, Valor } from '../lib/types'
@@ -22,7 +23,7 @@ export const fmtCoord = (n: number | null) =>
   n === null || n === undefined ? '—' : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 
 export default function TabelaPontos({ contrato, layout }: { contrato: Contract; layout: LayoutItem[] }) {
-  const { podeEditar } = useAuth()
+  const { podeEditar, isAdmin } = useAuth()
   const navigate = useNavigate()
   const [pagina, setPagina] = useState(0)
   const [busca, setBusca] = useState('')
@@ -31,14 +32,66 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
   const [exportando, setExportando] = useState('')
+  const [selecao, setSelecao] = useState<Set<string>>(new Set())
+  const [excluindo, setExcluindo] = useState(false)
+  const [desfazer, setDesfazer] = useState<{ ids: string[]; texto: string } | null>(null)
+  const [verLixeira, setVerLixeira] = useState(false)
+  const [recarga, setRecarga] = useState(0)
 
   useEffect(() => {
     setCarregando(true)
     listPoints(contrato.id, pagina, POR_PAGINA, buscaAplicada)
-      .then(setDados)
+      .then((d) => {
+        setDados(d)
+        // página vazia depois de excluir: volta uma
+        if (d.rows.length === 0 && pagina > 0) setPagina(pagina - 1)
+      })
       .catch((e) => setErro(msgErro(e)))
       .finally(() => setCarregando(false))
-  }, [contrato.id, pagina, buscaAplicada])
+  }, [contrato.id, pagina, buscaAplicada, recarga])
+
+  useEffect(() => setSelecao(new Set()), [contrato.id, pagina, buscaAplicada])
+
+  function alternar(id: string) {
+    setSelecao((s) => {
+      const n = new Set(s)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+  }
+  const todosMarcados = dados.rows.length > 0 && dados.rows.every((r) => selecao.has(r.id))
+  function alternarTodos() {
+    setSelecao(todosMarcados ? new Set() : new Set(dados.rows.map((r) => r.id)))
+  }
+
+  async function excluir(ids: string[], rotulo: string) {
+    if (!ids.length) return
+    if (!confirm(`Excluir ${rotulo}?\n\nVai para a lixeira do contrato: some do painel e do Excel, mas pode ser restaurado.`)) return
+    setExcluindo(true)
+    setErro('')
+    try {
+      const n = await deletePoints(ids)
+      setSelecao(new Set())
+      setDesfazer({ ids, texto: `${n} ponto(s) movido(s) para a lixeira.` })
+      setRecarga((x) => x + 1)
+    } catch (e) {
+      setErro(msgErro(e))
+    } finally {
+      setExcluindo(false)
+    }
+  }
+
+  async function desfazerExclusao() {
+    if (!desfazer) return
+    try {
+      await restorePoints(desfazer.ids)
+      setDesfazer(null)
+      setRecarga((x) => x + 1)
+    } catch (e) {
+      setErro(msgErro(e))
+    }
+  }
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -75,6 +128,9 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
         <button className="btn" onClick={exportar} disabled={!!exportando || dados.total === 0}>
           {exportando || '⬇ Exportar Excel'}
         </button>
+        {isAdmin && (
+          <button className="btn" onClick={() => setVerLixeira(true)}>🗑 Lixeira</button>
+        )}
         {podeEditar && (
           <button className="btn primario" onClick={() => navigate(`/contratos/${contrato.id}/pontos/novo`)}>
             + Novo ponto
@@ -87,11 +143,36 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
         </div>
       )}
       {erro && <div className="alerta erro">{erro}</div>}
+      {desfazer && (
+        <div className="alerta ok barra-acao">
+          <span>{desfazer.texto}</span>
+          <button className="btn" onClick={desfazerExclusao}>↶ Desfazer</button>
+          <button className="btn-x" onClick={() => setDesfazer(null)} aria-label="Fechar">×</button>
+        </div>
+      )}
+      {isAdmin && selecao.size > 0 && (
+        <div className="alerta aviso barra-acao">
+          <span><b>{selecao.size}</b> ponto(s) selecionado(s)</span>
+          <button className="btn perigo" disabled={excluindo} onClick={() => excluir([...selecao], `${selecao.size} ponto(s) selecionado(s)`)}>
+            {excluindo ? 'Excluindo…' : '🗑 Excluir selecionados'}
+          </button>
+          <button className="btn" onClick={() => setSelecao(new Set())}>Limpar seleção</button>
+        </div>
+      )}
+      {verLixeira && (
+        <Lixeira contrato={contrato} layout={layout} onFechar={(mudou) => { setVerLixeira(false); if (mudou) setRecarga((x) => x + 1) }} />
+      )}
 
       <div className="tabela-scroll">
         <table className="tabela">
           <thead>
             <tr>
+              {podeEditar && (
+                <th className="col-acoes">
+                  {isAdmin && <input type="checkbox" checked={todosMarcados} onChange={alternarTodos} aria-label="Selecionar todos da página" />}
+                  <span>Ações</span>
+                </th>
+              )}
               {ordenado.map((c) => (
                 <th key={c.chave} className={c.sistema ? 'col-sistema' : ''}>
                   {!c.sistema && <span className="seq">{c.sequencia}</span>}
@@ -103,15 +184,24 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
           <tbody>
             {carregando ? (
               <tr>
-                <td colSpan={ordenado.length} className="celula-vazia">Carregando…</td>
+                <td colSpan={ordenado.length + (podeEditar ? 1 : 0)} className="celula-vazia">Carregando…</td>
               </tr>
             ) : dados.rows.length === 0 ? (
               <tr>
-                <td colSpan={ordenado.length} className="celula-vazia">Nenhum ponto encontrado.</td>
+                <td colSpan={ordenado.length + (podeEditar ? 1 : 0)} className="celula-vazia">Nenhum ponto encontrado.</td>
               </tr>
             ) : (
               dados.rows.map((p) => (
-                <tr key={p.id} onClick={() => navigate(`/contratos/${contrato.id}/pontos/${p.id}`)} className="clicavel">
+                <tr key={p.id} onClick={() => navigate(`/contratos/${contrato.id}/pontos/${p.id}`)} className={`clicavel ${selecao.has(p.id) ? 'linha-ativa' : ''}`}>
+                  {podeEditar && (
+                    <td className="col-acoes" onClick={(e) => e.stopPropagation()}>
+                      {isAdmin && <input type="checkbox" checked={selecao.has(p.id)} onChange={() => alternar(p.id)} aria-label={`Selecionar ponto ${p.ID}`} />}
+                      <Link className="acao" to={`/contratos/${contrato.id}/pontos/${p.id}`} title="Editar ponto">✏️ Editar</Link>
+                      {isAdmin && (
+                        <button className="acao perigo" title="Excluir ponto" disabled={excluindo} onClick={() => excluir([p.id], `o ponto ${p.ID}`)}>🗑</button>
+                      )}
+                    </td>
+                  )}
                   {ordenado.map((c) => {
                     switch (c.chave) {
                       case 'ID':

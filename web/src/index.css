@@ -267,3 +267,23 @@ label.check input { width: 18px; min-height: 18px; }
 .modo-lista legend { font-size: 0.85rem; font-weight: 500; color: var(--tinta-2); padding: 0 4px; }
 .modo-lista label.check { align-items: flex-start; }
 .modo-lista input[type=radio] { width: 18px; min-height: 18px; margin-top: 2px; }
+
+/* Ações por ponto, seleção e lixeira */
+.tabela th.col-acoes, .tabela td.col-acoes { position: sticky; left: 0; z-index: 1; background: var(--superficie); white-space: nowrap; }
+.tabela th.col-acoes { background: var(--superficie-2); z-index: 2; }
+.tabela tr.clicavel:hover td.col-acoes { background: var(--superficie-2); }
+.tabela tr.linha-ativa td.col-acoes { background: var(--ambar-claro); }
+.col-acoes input[type=checkbox], .modal input[type=checkbox] { width: 16px; height: 16px; margin: 0 8px 0 0; vertical-align: middle; accent-color: var(--ambar); cursor: pointer; }
+.col-acoes span { vertical-align: middle; }
+.acao { display: inline-block; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--linha); background: transparent; color: var(--tinta); font: inherit; font-size: .82rem; text-decoration: none; cursor: pointer; vertical-align: middle; }
+.acao + .acao { margin-left: 6px; }
+.acao:hover { border-color: var(--ambar); background: var(--ambar-claro); }
+.acao.perigo:hover { border-color: var(--erro); background: var(--erro-claro); }
+.barra-acao { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; }
+.alerta.barra-acao > span { margin-right: auto; }
+.btn-x { border: 0; background: transparent; color: inherit; font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 2px 6px; }
+.modal-fundo { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+.modal { background: var(--superficie); color: var(--tinta); border: 1px solid var(--linha); border-radius: 12px; width: min(1100px, 100%); padding: 18px 20px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+.modal-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.modal-topo h2 { margin: 0; font-size: 1.15rem; }
+.modal-tabela { max-height: 60vh; overflow: auto; }

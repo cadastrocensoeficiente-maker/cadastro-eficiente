@@ -116,8 +116,32 @@ export async function updatePoint(pointId: string, p: PointInput) {
   unwrap(await supabase.from('points').update(p).eq('id', pointId).select('id').single())
 }
 
+/** Move pontos para a lixeira (somente admin). Fotos e ID ficam guardados. */
+export async function deletePoints(ids: string[]) {
+  return unwrap(await supabase.rpc('admin_excluir_pontos', { p_ids: ids })) as number
+}
+
 export async function deletePoint(pointId: string) {
-  unwrap(await supabase.from('points').delete().eq('id', pointId))
+  await deletePoints([pointId])
+}
+
+export async function restorePoints(ids: string[]) {
+  return unwrap(await supabase.rpc('admin_restaurar_pontos', { p_ids: ids })) as number
+}
+
+export interface PontoLixeira {
+  id: string
+  codigo: string
+  valores: Record<string, Valor>
+  latitude: number | null
+  longitude: number | null
+  total_fotos: number
+  excluido_em: string
+  excluido_por_nome: string | null
+}
+
+export async function listTrash(contractId: string) {
+  return unwrap(await supabase.rpc('admin_lixeira', { p_contract: contractId })) as PontoLixeira[]
 }
 
 export async function previewCoord(contractId: string, lat: number, lon: number) {

@@ -117,7 +117,7 @@ export default function PontoForm() {
   }
 
   async function excluir() {
-    if (!ponto || !confirm(`Excluir o ponto ${ponto.ID}? As fotos dele também deixam de aparecer.`)) return
+    if (!ponto || !confirm(`Excluir o ponto ${ponto.ID}? Ele vai para a lixeira do contrato e pode ser restaurado.`)) return
     try {
       await deletePoint(ponto.id)
       navigate(`/contratos/${contractId}`)
