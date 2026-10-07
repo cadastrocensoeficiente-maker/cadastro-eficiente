@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, msgErro } from '../lib/supabase'
+import { NATIVO, URL_APK } from '../lib/config'
 
 export default function Login({ onEntrou }: { onEntrou: (s: Session) => Promise<void> }) {
   const [email, setEmail] = useState('')
@@ -42,6 +43,9 @@ export default function Login({ onEntrou }: { onEntrou: (s: Session) => Promise<
       {erro && <div className="alerta erro">{erro}</div>}
       <button className="btn primario grande" disabled={enviando}>{enviando ? 'Entrando…' : 'Entrar'}</button>
       <p className="nota">Use o mesmo acesso do painel. O administrador precisa atribuir você aos contratos.</p>
+      {!NATIVO && /Android/i.test(navigator.userAgent) && (
+        <a className="btn" href={URL_APK}>⬇ Baixar aplicativo Android (APK)</a>
+      )}
     </form>
   )
 }

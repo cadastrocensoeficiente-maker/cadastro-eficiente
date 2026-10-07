@@ -42,7 +42,7 @@ body { margin: 0; background: var(--fundo); overscroll-behavior-y: contain; }
 .centro-txt { text-align: center; }
 
 /* Botões */
-.btn { min-height: 48px; padding: 10px 16px; border-radius: var(--r); border: 1px solid var(--linha); background: var(--sup);
+.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; min-height: 48px; padding: 10px 16px; border-radius: var(--r); border: 1px solid var(--linha); background: var(--sup);
   color: var(--tinta); font: inherit; font-weight: 600; cursor: pointer; }
 .btn:disabled { opacity: .5; }
 .btn.primario { background: var(--ambar); border-color: var(--ambar); color: #fff; }

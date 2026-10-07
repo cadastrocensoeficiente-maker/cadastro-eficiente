@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cadastro Campo</string>
+    <string name="title_activity_main">Cadastro Campo</string>
+    <string name="package_name">br.com.eficienteserv.cadastrocampo</string>
+    <string name="custom_url_scheme">br.com.eficienteserv.cadastrocampo</string>
+</resources>

@@ -11,6 +11,9 @@ interface Membro {
   pontos: number
 }
 
+export const URL_APK =
+  'https://github.com/cadastrocensoeficiente-maker/cadastro-eficiente/releases/latest/download/cadastro-campo.apk'
+
 export const URL_APP_CAMPO = (import.meta.env.VITE_APP_CAMPO_URL as string) || 'https://cadastro-campo.vercel.app'
 
 export default function Equipe({ contrato }: { contrato: Contract }) {

@@ -1,0 +1,103 @@
+# Compila o APK Android do app de campo e publica em "Releases".
+# Link fixo para baixar sempre a versão mais nova:
+#   https://github.com/cadastrocensoeficiente-maker/cadastro-eficiente/releases/latest/download/cadastro-campo.apk
+#
+# Assinatura (importante para atualizar o app sem desinstalar):
+#   Configure em Settings → Secrets and variables → Actions:
+#     ANDROID_KEYSTORE_BASE64  (arquivo .keystore em base64)
+#     ANDROID_KEYSTORE_PASSWORD
+#   Sem esses secrets, o APK sai com uma chave PROVISÓRIA diferente a cada build (só para teste).
+
+name: APK do app de campo
+
+on:
+  push:
+    branches: [main]
+    paths: ['campo/**', '.github/workflows/apk-campo.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-campo
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: campo
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: campo/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Compilar telas (modo APK)
+        run: npm run build
+        env:
+          VITE_NATIVO: '1'
+          VITE_API_BASE: https://cadastro-campo.vercel.app
+
+      - name: Copiar telas para o projeto Android
+        run: npx cap sync android
+
+      - name: Preparar assinatura
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
+            echo "$KS_B64" | base64 -d > android/app/release.keystore
+            echo "KS_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+            echo "ASSINATURA=definitiva" >> "$GITHUB_ENV"
+          else
+            keytool -genkeypair -v -keystore android/app/release.keystore -alias campo \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass provisoria -keypass provisoria \
+              -dname "CN=Cadastro Campo (provisorio), O=Eficiente, C=BR"
+            echo "KS_PASSWORD=provisoria" >> "$GITHUB_ENV"
+            echo "ASSINATURA=provisoria" >> "$GITHUB_ENV"
+          fi
+
+      - name: Gerar APK
+        working-directory: campo/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon \
+            -PversionCode=${{ github.run_number }} \
+            -PversionName=1.${{ github.run_number }}
+          cp app/build/outputs/apk/release/app-release.apk ../cadastro-campo.apk
+
+      - name: Publicar em Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$ASSINATURA" = "definitiva" ]; then
+            AVISO="Assinatura definitiva: atualiza por cima da versão anterior sem perder dados."
+          else
+            AVISO="⚠️ Assinatura PROVISÓRIA (somente teste). Para atualizar será preciso desinstalar — envie todos os pontos antes."
+          fi
+          gh release create "campo-v${{ github.run_number }}" cadastro-campo.apk \
+            --title "App de campo v1.${{ github.run_number }}" \
+            --notes "APK do Cadastro Campo. ${AVISO} Commit ${GITHUB_SHA::7}." \
+            --latest
+
+      - name: Guardar APK também como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: cadastro-campo-v1.${{ github.run_number }}
+          path: campo/cadastro-campo.apk

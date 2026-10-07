@@ -66,15 +66,33 @@ export async function usuario(req: Request): Promise<{ sb: SupabaseClient; role:
   return { sb, role: perfil?.role ?? 'pendente', userId: data.user.id }
 }
 
+// O APK Android roda as telas em https://localhost e chama esta API pela internet.
+const ORIGENS_APP = ['https://localhost', 'http://localhost', 'capacitor://localhost']
+
+function cors(req: Request): Record<string, string> {
+  const origem = req.headers.get('origin') ?? ''
+  if (!ORIGENS_APP.includes(origem)) return {}
+  return {
+    'Access-Control-Allow-Origin': origem,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  }
+}
+
+export const preflight = (req: Request) => new Response(null, { status: 204, headers: cors(req) })
+
 export function responder(fn: (req: Request) => Promise<unknown>) {
   return async (req: Request) => {
+    const h = cors(req)
     try {
       if (req.method !== 'POST') throw new HttpError(405, 'Use POST.')
-      return Response.json(await fn(req))
+      return Response.json(await fn(req), { headers: h })
     } catch (e) {
       const status = e instanceof HttpError ? e.status : 500
       const msg = e instanceof Error ? e.message : 'Erro interno.'
-      return Response.json({ error: msg }, { status })
+      return Response.json({ error: msg }, { status, headers: h })
     }
   }
 }

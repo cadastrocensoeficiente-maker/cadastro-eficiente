@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // No APK não há service worker: as telas já estão dentro do aplicativo.
+      disable: process.env.VITE_NATIVO === '1',
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png'],
       manifest: {

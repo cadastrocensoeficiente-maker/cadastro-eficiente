@@ -1,6 +1,8 @@
 // POST /api/fotos-ver  { point_id }
 // Devolve URLs assinadas (GET, 1 h) das fotos do ponto. O bucket continua privado.
-import { HttpError, responder, urlAssinada, usuario } from './_r2.js'
+import { HttpError, preflight, responder, urlAssinada, usuario } from './_r2.js'
+
+export const OPTIONS = preflight
 
 export const POST = responder(async (req) => {
   const { sb, role } = await usuario(req)

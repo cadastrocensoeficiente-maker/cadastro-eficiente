@@ -1,6 +1,8 @@
 // POST /api/fotos-upload  { point_id, content_type, nome }
 // Devolve uma URL assinada (PUT, 10 min) para o navegador enviar a foto direto ao R2.
-import { HttpError, responder, urlAssinada, usuario } from './_r2.js'
+import { HttpError, preflight, responder, urlAssinada, usuario } from './_r2.js'
+
+export const OPTIONS = preflight
 
 const TIPOS = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 

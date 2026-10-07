@@ -2,6 +2,7 @@
 // Roda ao abrir o app, quando a internet volta, a cada 30 s e após cada cadastro.
 import { db, type ColunaCampo, type ContratoLocal, type PontoLocal } from './db'
 import { supabase, msgErro } from './supabase'
+import { API_BASE } from './config'
 
 type Ouvinte = (e: EstadoSync) => void
 export interface EstadoSync {
@@ -98,7 +99,7 @@ async function enviarFotos() {
     try {
       await db.fotos.update(f.id, { status: 'enviando' })
       const tipo = f.blob.type || 'image/jpeg'
-      const res = await fetch('/api/fotos-upload', {
+      const res = await fetch(`${API_BASE}/api/fotos-upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ point_id: ponto.serverId, content_type: tipo, nome: f.nome }),
