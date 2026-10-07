@@ -247,3 +247,14 @@ label.check input { width: 18px; min-height: 18px; }
 .contratos-check { border: 1px solid var(--linha); border-radius: var(--raio); padding: 10px 14px; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .contratos-check legend { font-size: 0.85rem; font-weight: 500; color: var(--tinta-2); padding: 0 4px; }
 .mensagem-acesso { background: var(--superficie-2); border: 1px solid var(--linha); border-radius: var(--raio); padding: 12px 14px; white-space: pre-wrap; font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; margin: 8px 0; }
+.situacao { font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.situacao.ativo { background: var(--ok-claro); color: var(--ok); }
+.situacao.bloqueado { background: var(--erro-claro); color: var(--erro); }
+.situacao.aguardando { background: var(--aviso-claro); color: var(--ambar-escuro); }
+.celula-contratos { max-width: 220px; }
+.tabela tr.linha-ativa td { background: var(--ambar-claro); }
+.papel-cadastrador { background: var(--sistema-claro); }
+.secao-senha { border-top: 1px solid var(--linha); margin-top: 14px; padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.secao-senha .linha-senha { max-width: 520px; }
+.linha-acao { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.secao-senha > .btn { align-self: flex-start; }
