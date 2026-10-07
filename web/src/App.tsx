@@ -6,7 +6,7 @@ import Contrato from './pages/Contrato'
 import PontoForm from './pages/PontoForm'
 import Fotos from './pages/Fotos'
 import Usuarios from './pages/Usuarios'
-import { URL_APP_CAMPO } from './components/Equipe'
+import { URL_APK, URL_APP_CAMPO } from './components/Equipe'
 
 export default function App() {
   const { session, profile, carregando, isAdmin, sair } = useAuth()
@@ -37,7 +37,7 @@ export default function App() {
         <nav>
           <Link to="/">Contratos</Link>
           {isAdmin && <Link to="/usuarios">Usuários</Link>}
-          <a href={URL_APP_CAMPO} target="_blank" rel="noreferrer">App de campo ↗</a>
+          <a href={URL_APK} title="Aplicativo Android para os cadastradores de campo">Baixar app de campo (APK)</a>
         </nav>
         <div className="usuario">
           <span title={profile?.email ?? ''}>
