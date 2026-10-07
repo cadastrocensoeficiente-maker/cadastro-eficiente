@@ -3,6 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../lib/db'
 import { ouvirSync, sincronizar, type EstadoSync } from '../lib/sync'
 import type { Usuario } from '../App'
+import { VERSAO, verificarAtualizacao, versaoTexto } from '../lib/atualizacao'
+import { NATIVO } from '../lib/config'
 
 export function useOnline() {
   const [on, setOn] = useState(navigator.onLine)
@@ -32,6 +34,8 @@ export default function BarraStatus({ usuario, onSair }: { usuario: Usuario; onS
   const pendFotos = useLiveQuery(() => db.fotos.where('status').anyOf('pendente', 'enviando').count(), [], 0)
   const erros = useLiveQuery(async () => (await db.pontos.where('status').equals('erro').count()) + (await db.fotos.where('status').equals('erro').count()), [], 0)
   const [menu, setMenu] = useState(false)
+  const [procurando, setProcurando] = useState(false)
+  const [msgVersao, setMsgVersao] = useState('')
 
   const ultima = sync?.ultimaVez ? new Date(sync.ultimaVez).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'nunca'
 
@@ -52,6 +56,17 @@ export default function BarraStatus({ usuario, onSair }: { usuario: Usuario; onS
           <div className="menu-caixa" onClick={(e) => e.stopPropagation()}>
             <p><b>{usuario.nome}</b><br /><small>{usuario.email}</small></p>
             <p><small>Última sincronização: {ultima}</small></p>
+            <p><small>Versão do app: {versaoTexto(VERSAO)}</small></p>
+            {NATIVO && online && (
+              <button className="btn" disabled={procurando} onClick={async () => {
+                setProcurando(true)
+                setMsgVersao('')
+                const r = await verificarAtualizacao(true)
+                setProcurando(false)
+                setMsgVersao(r === 'nova' ? 'Nova versão baixada — toque na faixa verde para aplicar.' : r === 'atual' ? 'Você já está na versão mais nova.' : 'Não foi possível verificar agora.')
+              }}>{procurando ? 'Procurando…' : 'Procurar atualização'}</button>
+            )}
+            {msgVersao && <p><small>{msgVersao}</small></p>}
             {sync?.ultimoErro && <p className="erro-txt"><small>{sync.ultimoErro}</small></p>}
             <button className="btn" onClick={() => { setMenu(false); onSair() }}>Sair da conta</button>
           </div>

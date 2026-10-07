@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { db, pedirArmazenamentoPersistente } from './lib/db'
 import { sincronizar } from './lib/sync'
+import { aplicarAgora, iniciarAtualizacao, verificarAtualizacao, versaoTexto } from './lib/atualizacao'
 import Login from './telas/Login'
 import Contratos from './telas/Contratos'
 import Cadastro from './telas/Cadastro'
@@ -33,6 +34,7 @@ export default function App() {
   })
   const [verificando, setVerificando] = useState(true)
   const [tela, setTela] = useState<Tela>({ nome: 'contratos' })
+  const [novaVersao, setNovaVersao] = useState(0)
 
   async function carregarPerfil(s: Session) {
     const { data } = await supabase.from('profiles').select('id, nome, email, role').eq('id', s.user.id).single()
@@ -44,6 +46,7 @@ export default function App() {
 
   useEffect(() => {
     pedirArmazenamentoPersistente()
+    iniciarAtualizacao(setNovaVersao)
     supabase.auth.getSession().then(async ({ data }) => {
       // Offline: segue com o usuário guardado no aparelho para não travar o trabalho.
       if (data.session && navigator.onLine) await carregarPerfil(data.session)
@@ -53,7 +56,11 @@ export default function App() {
     const aoVoltar = () => sincronizar({ contratos: true })
     window.addEventListener('online', aoVoltar)
     // Ao voltar para o app (tela ligada / troca de aplicativo), busca alterações do painel.
-    const aoFocar = () => document.visibilityState === 'visible' && sincronizar({ contratos: true })
+    const aoFocar = () => {
+      if (document.visibilityState !== 'visible') return
+      sincronizar({ contratos: true })
+      verificarAtualizacao()
+    }
     document.addEventListener('visibilitychange', aoFocar)
     const t = setInterval(() => sincronizar(), 30_000)
     return () => {
@@ -110,6 +117,11 @@ export default function App() {
   return (
     <div className="app">
       <BarraStatus usuario={usuario} onSair={sair} />
+      {novaVersao > 0 && (
+        <button className="faixa atualizacao" onClick={aplicarAgora}>
+          Nova versão {versaoTexto(novaVersao)} pronta. Toque aqui para atualizar agora (seus pontos não são perdidos).
+        </button>
+      )}
       {tela.nome === 'contratos' && <Contratos usuario={usuario} irPara={setTela} />}
       {tela.nome === 'cadastro' && <Cadastro usuario={usuario} contractId={tela.contractId} localId={tela.localId} irPara={setTela} />}
       {tela.nome === 'lista' && <Lista usuario={usuario} contractId={tela.contractId} irPara={setTela} />}

@@ -14,6 +14,8 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SystemBars: { insetsHandling: 'css', initialViewportFitValueHint: 'cover' },
+    // Atualização das telas pelo próprio app (modo manual, sem servidor externo de terceiros)
+    CapacitorUpdater: { autoUpdate: false, statsUrl: '', updateUrl: '', channelUrl: '', autoDeletePrevious: true, appReadyTimeout: 15000 },
   },
 }
 

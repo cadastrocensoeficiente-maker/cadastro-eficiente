@@ -155,3 +155,4 @@ input:disabled, select:disabled { background: var(--sup2); color: var(--tinta2);
   padding-bottom: max(12px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--fundo) 25%); z-index: 10;
   max-width: 640px; margin: 0 auto; }
 .mini.add { font: inherit; cursor: pointer; }
+.faixa.atualizacao { display: block; width: 100%; border: 0; text-align: left; font: inherit; font-size: .88rem; font-weight: 600; background: var(--ok-cl); color: var(--ok); cursor: pointer; }

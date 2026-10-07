@@ -51,6 +51,10 @@ jobs:
         env:
           VITE_NATIVO: '1'
           VITE_API_BASE: https://cadastro-campo.vercel.app
+          VITE_VERSAO: ${{ github.run_number }}
+
+      - name: Empacotar telas para atualização automática do app
+        run: cd dist && zip -qr ../campo-web.zip .
 
       - name: Copiar telas para o projeto Android
         run: npx cap sync android
@@ -91,9 +95,9 @@ jobs:
           else
             AVISO="⚠️ Assinatura PROVISÓRIA (somente teste). Para atualizar será preciso desinstalar — envie todos os pontos antes."
           fi
-          gh release create "campo-v${{ github.run_number }}" cadastro-campo.apk \
+          gh release create "campo-v${{ github.run_number }}" cadastro-campo.apk campo-web.zip \
             --title "App de campo v1.${{ github.run_number }}" \
-            --notes "APK do Cadastro Campo. ${AVISO} Commit ${GITHUB_SHA::7}." \
+            --notes "APK do Cadastro Campo. ${AVISO} O pacote campo-web.zip é baixado sozinho pelos apps já instalados (atualização sem reinstalar). Commit ${GITHUB_SHA::7}." \
             --latest
 
       - name: Guardar APK também como artefato
