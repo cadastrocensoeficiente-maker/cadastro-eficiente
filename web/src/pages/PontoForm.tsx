@@ -182,6 +182,14 @@ export default function PontoForm() {
           )}
         </div>
 
+        {/* DATA_CADASTRO · HORA_CADASTRO · COLABORADOR — sistema */}
+        {!novo && ponto && (
+          <div className="campo-sistema">
+            <span className="rotulo-sistema">CADASTRO</span>
+            <span className="mono">{ponto.DATA_CADASTRO ?? '—'} · {ponto.HORA_CADASTRO ?? '—'} · {ponto.COLABORADOR ?? '—'}</span>
+          </div>
+        )}
+
         {/* LINK_FOTOS — sistema */}
         {!novo && ponto && (
           <div className="campo-sistema">

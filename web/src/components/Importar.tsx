@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { importPoints } from '../lib/api'
-import { lerXlsx, mapearAutomatico, montarLinhasImportacao, normalizarCabecalho, type Destino, type PlanilhaLida } from '../lib/excel'
+import { DESTINOS_SISTEMA_IGNORADOS, lerXlsx, mapearAutomatico, montarLinhasImportacao, normalizarCabecalho, type Destino, type PlanilhaLida } from '../lib/excel'
 import { msgErro } from '../lib/supabase'
 import type { ColumnType, Contract, LayoutItem } from '../lib/types'
 
@@ -100,7 +100,7 @@ export default function Importar({ contrato, layout }: { contrato: Contract; lay
             </thead>
             <tbody>
               {planilha.cabecalhos.map((h, i) => {
-                const sistemaFixo = ['ID', 'UUID', 'LINK_FOTOS'].includes(normalizarCabecalho(h))
+                const sistemaFixo = DESTINOS_SISTEMA_IGNORADOS.includes(normalizarCabecalho(h))
                 return (
                   <tr key={i}>
                     <td className="mono">{h}</td>

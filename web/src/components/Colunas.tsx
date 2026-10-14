@@ -9,7 +9,15 @@ import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { COLUMN_TYPES, type ColumnType, type Contract, type ContractColumn } from '../lib/types'
 
-const SISTEMA_FINAL = ['LATITUDE', 'LONGITUDE', 'LINK_FOTOS']
+const SISTEMA_FINAL = ['LATITUDE', 'LONGITUDE', 'DATA_CADASTRO', 'HORA_CADASTRO', 'COLABORADOR', 'LINK_FOTOS']
+const DESC_SISTEMA: Record<string, string> = {
+  LATITUDE: 'Capturada pelo GPS · graus decimais (WGS84 / EPSG:4326, pronto para o QGIS)',
+  LONGITUDE: 'Capturada pelo GPS · graus decimais (WGS84 / EPSG:4326, pronto para o QGIS)',
+  DATA_CADASTRO: 'Dia em que o ponto foi cadastrado (no celular) · dd/mm/aaaa',
+  HORA_CADASTRO: 'Hora em que o ponto foi cadastrado (no celular) · hh:mm',
+  COLABORADOR: 'Nome do usuário que cadastrou o ponto · gravado automaticamente',
+  LINK_FOTOS: 'Galeria de fotos do ponto',
+}
 
 export default function Colunas({ contrato, onMudou }: { contrato: Contract; onMudou: () => void }) {
   const { isAdmin } = useAuth()
@@ -80,7 +88,7 @@ export default function Colunas({ contrato, onMudou }: { contrato: Contract; onM
     <div className="colunas">
       <div className="explica">
         <p>
-          <b>ID, LATITUDE, LONGITUDE e LINK_FOTOS</b> são colunas do sistema: fixas, sempre presentes e fora da numeração.
+          <b>ID, LATITUDE, LONGITUDE, DATA_CADASTRO, HORA_CADASTRO, COLABORADOR e LINK_FOTOS</b> são colunas do sistema: fixas, sempre presentes e fora da numeração.
           As colunas configuráveis seguem sempre a sequência <b>1, 2, 3…</b> sem buracos: o sistema renumera sozinho ao criar,
           remover ou arrastar.
         </p>
@@ -121,7 +129,7 @@ export default function Colunas({ contrato, onMudou }: { contrato: Contract; onM
         </DndContext>
         {colunas.length === 0 && <li className="coluna vazia">Nenhuma coluna configurável ainda.</li>}
         {SISTEMA_FINAL.map((n) => (
-          <LinhaSistema key={n} nome={n} desc={n === 'LINK_FOTOS' ? 'Galeria de fotos do ponto (Cloudflare R2)' : 'Capturada pelo GPS · graus decimais (WGS84 / EPSG:4326, pronto para o QGIS)'} />
+          <LinhaSistema key={n} nome={n} desc={DESC_SISTEMA[n]} />
         ))}
       </ol>
 

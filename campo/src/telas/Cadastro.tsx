@@ -292,6 +292,14 @@ export default function Cadastro({ usuario, contractId, localId, irPara }: {
         <span className="rot">ID</span>
         <span className="mono forte">{existente?.codigo ?? (existente ? 'aguardando envio' : 'gerado pelo sistema')}</span>
       </div>
+      <div className="sistema">
+        <span className="rot">COLABORADOR</span>
+        <span className="forte">{usuario.nome || usuario.email}</span>
+      </div>
+      <div className="sistema">
+        <span className="rot">DATA · HORA</span>
+        <span className="mono">{existente ? new Date(existente.criadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'gravadas ao salvar'}</span>
+      </div>
 
       {/* Colunas configuráveis na sequência 1..N */}
       {contrato.colunas.map((c) => (

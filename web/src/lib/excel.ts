@@ -23,21 +23,28 @@ function formatarValor(v: Valor | undefined, tipo: string): string | number | bo
   return v as string | number
 }
 
+/** dd/mm/aaaa → data do Excel (meio-dia UTC para não "voltar um dia" em nenhum fuso). */
+function dataExcel(br: string | null): Date | null {
+  const m = br ? /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(br) : null
+  return m ? new Date(Date.UTC(Number(m[3]), Number(m[2]) - 1, Number(m[1]), 12)) : null
+}
+
 /**
  * Exportação: ordem OBRIGATÓRIA vem de contract_layout():
- * ID · configuráveis 1..N · LATITUDE · LONGITUDE · LINK_FOTOS
+ * ID · configuráveis 1..N · LATITUDE · LONGITUDE · DATA_CADASTRO · HORA_CADASTRO · COLABORADOR · LINK_FOTOS
  */
-export async function exportarXlsx(nomeContrato: string, layout: LayoutItem[], pontos: PointRow[], origem: string) {
+export async function exportarXlsx(nomeContrato: string, layout: LayoutItem[], pontos: PointRow[], origem: string, sufixo = '') {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'Cadastro Eficiente'
   wb.created = new Date()
   const ws = wb.addWorksheet('PONTOS', { views: [{ state: 'frozen', ySplit: 1 }] })
 
   const ordenado = [...layout].sort((a, b) => a.ordem - b.ordem)
-  ws.columns = ordenado.map((c) => ({
+  // chave por posição: nunca há conflito entre nomes de colunas
+  ws.columns = ordenado.map((c, i) => ({
     header: c.rotulo,
-    key: c.chave,
-    width: c.chave === 'LINK_FOTOS' ? 16 : c.chave === 'ID' ? 10 : Math.max(12, c.rotulo.length + 4),
+    key: `c${i}`,
+    width: c.chave === 'LINK_FOTOS' ? 18 : c.chave === 'ID' ? 10 : c.chave === 'COLABORADOR' ? 24 : Math.max(12, c.rotulo.length + 4),
   }))
 
   for (const p of pontos) {
@@ -49,10 +56,16 @@ export async function exportarXlsx(nomeContrato: string, layout: LayoutItem[], p
           return p.latitude === null ? null : Math.round(Number(p.latitude) * 1e7) / 1e7
         case 'LONGITUDE':
           return p.longitude === null ? null : Math.round(Number(p.longitude) * 1e7) / 1e7
+        case 'DATA_CADASTRO':
+          return dataExcel(p.DATA_CADASTRO)
+        case 'HORA_CADASTRO':
+          return p.HORA_CADASTRO
+        case 'COLABORADOR':
+          return p.COLABORADOR
         case 'LINK_FOTOS':
           return { text: p.total_fotos > 0 ? `📷 Ver fotos (${p.total_fotos})` : '📷 Ver fotos', hyperlink: origem + p.LINK_FOTOS }
         default:
-          return formatarValor(p.valores[c.column_id!], c.tipo)
+          return c.sistema ? null : formatarValor(p.valores[c.column_id!], c.tipo)
       }
     })
     ws.addRow(linha)
@@ -64,7 +77,8 @@ export async function exportarXlsx(nomeContrato: string, layout: LayoutItem[], p
   ordenado.forEach((c, i) => {
     if (c.sistema) ws.getRow(1).getCell(i + 1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } }
     if (c.chave === 'LATITUDE' || c.chave === 'LONGITUDE') ws.getColumn(i + 1).numFmt = '0.0000000'
-    if (c.tipo === 'data') ws.getColumn(i + 1).numFmt = 'dd/mm/yyyy'
+    if (c.tipo === 'data' || c.chave === 'DATA_CADASTRO') ws.getColumn(i + 1).numFmt = 'dd/mm/yyyy'
+    if (c.chave === 'HORA_CADASTRO') ws.getColumn(i + 1).numFmt = '@'
     if (c.chave === 'ID') ws.getColumn(i + 1).numFmt = '@'
   })
   ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: ordenado.length } }
@@ -74,7 +88,7 @@ export async function exportarXlsx(nomeContrato: string, layout: LayoutItem[], p
   const a = document.createElement('a')
   const data = new Date().toISOString().slice(0, 10)
   a.href = URL.createObjectURL(blob)
-  a.download = `${normalizarCabecalho(nomeContrato)}_${data}.xlsx`
+  a.download = sufixo ? `${normalizarCabecalho(nomeContrato)}${sufixo}.xlsx` : `${normalizarCabecalho(nomeContrato)}_COMPLETO_${data}.xlsx`
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 2000)
 }
@@ -127,7 +141,7 @@ export type Destino =
   | { tipo: 'tmx' }
   | { tipo: 'tmy' }
 
-export const DESTINOS_SISTEMA_IGNORADOS = ['ID', 'UUID', 'LINK_FOTOS', 'FOTOS']
+export const DESTINOS_SISTEMA_IGNORADOS = ['ID', 'UUID', 'LINK_FOTOS', 'FOTOS', 'DATA_CADASTRO', 'HORA_CADASTRO', 'COLABORADOR']
 
 export function mapearAutomatico(cabecalhos: string[], layout: LayoutItem[]): Destino[] {
   const usados = new Set<string>()

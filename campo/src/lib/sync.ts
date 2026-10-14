@@ -115,6 +115,8 @@ async function enviarPontos(fila: PontoLocal[], aoAvancar: (n: number) => void) 
       return {
         contract: p.contractId, client_uuid: p.localId, latitude: p.latitude, longitude: p.longitude,
         precisao_m: p.precisaoM, capturado_em: p.capturadoEm, valores,
+        // momento em que o ponto foi salvo no celular → DATA_CADASTRO / HORA_CADASTRO
+        cadastrado_em: p.criadoEm,
       }
     })
     await db.pontos.bulkUpdate(lote.map((p) => ({ key: p.localId, changes: { status: 'enviando' as const } })))

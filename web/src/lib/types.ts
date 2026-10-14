@@ -76,6 +76,11 @@ export interface PointRow {
   origem_coord: 'gps' | 'importacao' | 'manual_admin'
   created_at: string
   updated_at: string
+  /** momento do cadastro (no celular, para pontos do app) */
+  cadastrado_em: string
+  DATA_CADASTRO: string | null
+  HORA_CADASTRO: string | null
+  COLABORADOR: string | null
 }
 
 export interface Photo {

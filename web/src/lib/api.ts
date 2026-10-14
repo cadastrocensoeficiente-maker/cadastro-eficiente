@@ -99,22 +99,69 @@ export async function listPoints(contractId: string, page: number, pageSize: num
 }
 
 /** Todos os pontos em ordem de ID (para exportação), em lotes de 1000. */
-export async function listAllPoints(contractId: string, onProgress?: (n: number) => void) {
-  const all: PointRow[] = []
+/** Período pela data do cadastro (dias no horário de Fortaleza, -03:00). */
+export interface FiltroPeriodo {
+  de?: string // aaaa-mm-dd (inclusive)
+  ate?: string // aaaa-mm-dd (inclusive)
+}
+
+const inicioDoDia = (d: string) => `${d}T00:00:00-03:00`
+function diaSeguinte(d: string) {
+  const [y, m, dia] = d.split('-').map(Number)
+  const x = new Date(Date.UTC(y, m - 1, dia + 1))
+  return x.toISOString().slice(0, 10)
+}
+
+function aplicarPeriodo<T extends { gte: (c: string, v: string) => T; lt: (c: string, v: string) => T }>(q: T, f?: FiltroPeriodo): T {
+  if (f?.de) q = q.gte('cadastrado_em', inicioDoDia(f.de))
+  if (f?.ate) q = q.lt('cadastrado_em', inicioDoDia(diaSeguinte(f.ate)))
+  return q
+}
+
+/** Quantos pontos o contrato tem no período (para mostrar antes de baixar). */
+export async function countPoints(contractId: string, filtro?: FiltroPeriodo) {
+  const r = await aplicarPeriodo(
+    supabase.from('points_view').select('id', { count: 'exact', head: true }).eq('contract_id', contractId),
+    filtro,
+  )
+  if (r.error) throw r.error
+  return r.count ?? 0
+}
+
+/**
+ * Lê TODOS os pontos do contrato (no período, se informado), página por página,
+ * até completar o total contado pelo banco — nunca para no meio.
+ */
+export async function listAllPoints(contractId: string, onProgress?: (n: number, total: number) => void, filtro?: FiltroPeriodo) {
+  const total = await countPoints(contractId, filtro)
+  const porId = new Map<string, PointRow>()
   const size = 1000
-  for (let from = 0; ; from += size) {
-    const r = await supabase
-      .from('points_view')
-      .select('*')
-      .eq('contract_id', contractId)
+  let from = 0
+  let tentativas = 0
+  while (porId.size < total) {
+    const r = await aplicarPeriodo(
+      supabase.from('points_view').select('*').eq('contract_id', contractId),
+      filtro,
+    )
       .order('seq')
+      .order('id')
       .range(from, from + size - 1)
-    if (r.error) throw r.error
-    all.push(...((r.data ?? []) as PointRow[]))
-    onProgress?.(all.length)
-    if (!r.data || r.data.length < size) break
+    if (r.error) {
+      // oscilação de rede: tenta de novo a mesma página algumas vezes
+      if (++tentativas <= 3) {
+        await new Promise((ok) => setTimeout(ok, 1500 * tentativas))
+        continue
+      }
+      throw r.error
+    }
+    tentativas = 0
+    const linhas = (r.data ?? []) as PointRow[]
+    if (linhas.length === 0) break // algum ponto foi excluído durante a leitura
+    for (const l of linhas) porId.set(l.id, l)
+    from += linhas.length
+    onProgress?.(porId.size, total)
   }
-  return all
+  return [...porId.values()].sort((a, b) => a.seq - b.seq)
 }
 
 export async function getPoint(pointId: string) {

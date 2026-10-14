@@ -305,3 +305,21 @@ label.check input { width: 18px; min-height: 18px; }
 .contratos-excluidos ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
 .contratos-excluidos li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--superficie); border: 1px dashed var(--linha); border-radius: var(--raio); }
 .contratos-excluidos small { color: var(--tinta-3); }
+
+/* Baixar planilha */
+.modal-estreito { width: min(560px, 100%); }
+.periodo { border: 0; padding: 0; margin: 14px 0; display: grid; gap: 8px; }
+.periodo > label { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--linha); border-radius: var(--raio); cursor: pointer; }
+.periodo > label.ativo { border-color: var(--ambar); background: var(--ambar-claro); }
+.periodo > label input { margin-top: 3px; accent-color: var(--ambar); }
+.periodo > label span { display: grid; gap: 2px; }
+.periodo > label small { color: var(--tinta-3); }
+.periodo .datas { display: flex; gap: 12px; flex-wrap: wrap; padding: 2px 0 6px 40px; }
+.periodo .datas label { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
+.exportar-rodape { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 6px; }
+.periodo > label { display: flex !important; flex-direction: row !important; align-items: flex-start; text-align: left; justify-items: start; }
+.periodo > label input[type=radio] { width: 18px !important; height: 18px !important; min-height: 0 !important; padding: 0 !important; margin: 2px 0 0 !important; flex: none; border: 0; box-shadow: none; }
+.periodo > label > span { flex: 1; }
+.periodo .datas { justify-content: flex-start; }
+.periodo .datas label { display: flex !important; flex-direction: row !important; align-items: center; }
+.periodo .datas input[type=date] { width: auto !important; }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { deletePoints, listAllPoints, listPoints, restorePoints } from '../lib/api'
+import { deletePoints, listPoints, restorePoints } from '../lib/api'
+import Exportar from './Exportar'
 import Lixeira from './Lixeira'
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -31,7 +32,7 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
   const [dados, setDados] = useState<{ rows: PointRow[]; total: number }>({ rows: [], total: 0 })
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
-  const [exportando, setExportando] = useState('')
+  const [exportar, setExportar] = useState(false)
   const [selecao, setSelecao] = useState<Set<string>>(new Set())
   const [excluindo, setExcluindo] = useState(false)
   const [desfazer, setDesfazer] = useState<{ ids: string[]; texto: string } | null>(null)
@@ -101,20 +102,6 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
     return () => clearTimeout(t)
   }, [busca])
 
-  async function exportar() {
-    setExportando('Lendo pontos…')
-    try {
-      const todos = await listAllPoints(contrato.id, (n) => setExportando(`Lendo pontos… ${n.toLocaleString('pt-BR')}`))
-      setExportando('Gerando planilha…')
-      const { exportarXlsx } = await import('../lib/excel')
-      await exportarXlsx(contrato.nome, layout, todos, window.location.origin)
-    } catch (e) {
-      setErro(msgErro(e))
-    } finally {
-      setExportando('')
-    }
-  }
-
   const ordenado = [...layout].sort((a, b) => a.ordem - b.ordem)
   const paginas = Math.max(1, Math.ceil(dados.total / POR_PAGINA))
   const semColunas = !layout.some((c) => !c.sistema)
@@ -125,8 +112,8 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
         <input className="busca" placeholder="Buscar por ID, plaqueta, endereço…" value={busca} onChange={(e) => setBusca(e.target.value)} />
         <span className="contagem">{dados.total.toLocaleString('pt-BR')} ponto(s)</span>
         <div className="espaco" />
-        <button className="btn" onClick={exportar} disabled={!!exportando || dados.total === 0}>
-          {exportando || '⬇ Exportar Excel'}
+        <button className="btn" onClick={() => setExportar(true)}>
+          ⬇ Baixar planilha
         </button>
         {isAdmin && (
           <button className="btn" onClick={() => setVerLixeira(true)}>🗑 Lixeira</button>
@@ -159,6 +146,7 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
           <button className="btn" onClick={() => setSelecao(new Set())}>Limpar seleção</button>
         </div>
       )}
+      {exportar && <Exportar contrato={contrato} layout={layout} onFechar={() => setExportar(false)} />}
       {verLixeira && (
         <Lixeira contrato={contrato} layout={layout} onFechar={(mudou) => { setVerLixeira(false); if (mudou) setRecarga((x) => x + 1) }} />
       )}
@@ -210,6 +198,12 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
                         return <td key="LATITUDE" className="mono num">{fmtGraus(p.latitude)}</td>
                       case 'LONGITUDE':
                         return <td key="LONGITUDE" className="mono num">{fmtGraus(p.longitude)}</td>
+                      case 'DATA_CADASTRO':
+                        return <td key="DATA_CADASTRO" className="mono">{p.DATA_CADASTRO ?? '—'}</td>
+                      case 'HORA_CADASTRO':
+                        return <td key="HORA_CADASTRO" className="mono">{p.HORA_CADASTRO ?? '—'}</td>
+                      case 'COLABORADOR':
+                        return <td key="COLABORADOR">{p.COLABORADOR ?? '—'}</td>
                       case 'LINK_FOTOS':
                         return (
                           <td key="LINK_FOTOS" onClick={(e) => e.stopPropagation()}>
@@ -219,7 +213,7 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
                           </td>
                         )
                       default:
-                        return <td key={c.chave}>{exibirValor(p.valores[c.column_id!], c.tipo)}</td>
+                        return <td key={c.chave}>{c.sistema ? '' : exibirValor(p.valores[c.column_id!], c.tipo)}</td>
                     }
                   })}
                 </tr>
