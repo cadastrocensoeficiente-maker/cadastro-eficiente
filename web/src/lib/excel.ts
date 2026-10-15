@@ -19,7 +19,8 @@ function formatarValor(v: Valor | undefined, tipo: string): string | number | bo
     const [y, m, d] = v.split('-').map(Number)
     return new Date(Date.UTC(y, m - 1, d))
   }
-  if ((tipo === 'numero' || tipo === 'inteiro') && typeof v === 'number') return v
+  // exatamente como digitado: texto, sem notação científica e mantendo zeros à esquerda
+  if (tipo === 'numero' || tipo === 'inteiro') return String(v)
   return v as string | number
 }
 
@@ -78,7 +79,7 @@ export async function exportarXlsx(nomeContrato: string, layout: LayoutItem[], p
     if (c.sistema) ws.getRow(1).getCell(i + 1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } }
     if (c.chave === 'LATITUDE' || c.chave === 'LONGITUDE') ws.getColumn(i + 1).numFmt = '0.0000000'
     if (c.tipo === 'data' || c.chave === 'DATA_CADASTRO') ws.getColumn(i + 1).numFmt = 'dd/mm/yyyy'
-    if (c.chave === 'HORA_CADASTRO') ws.getColumn(i + 1).numFmt = '@'
+    if (c.chave === 'HORA_CADASTRO' || c.tipo === 'inteiro' || c.tipo === 'numero') ws.getColumn(i + 1).numFmt = '@'
     if (c.chave === 'ID') ws.getColumn(i + 1).numFmt = '@'
   })
   ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: ordenado.length } }

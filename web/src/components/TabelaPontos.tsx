@@ -13,7 +13,8 @@ export function exibirValor(v: Valor | undefined, tipo: string): string {
   if (v === null || v === undefined || v === '') return ''
   if (tipo === 'booleano') return v ? 'SIM' : 'NÃO'
   if (tipo === 'data' && typeof v === 'string') return v.split('-').reverse().join('/')
-  if (typeof v === 'number') return v.toLocaleString('pt-BR', { maximumFractionDigits: 6 })
+  // números aparecem exatamente como foram digitados (sem ponto de milhar)
+  if (typeof v === 'number') return String(v)
   return String(v)
 }
 
