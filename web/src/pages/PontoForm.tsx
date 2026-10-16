@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { createPoint, deletePoint, getContract, getLayout, getPoint, updatePoint } from '../lib/api'
+import { createPoint, deletePoint, getContract, getLayout, getPoint, listPhotos, photoUrls, updatePoint, uploadPhoto } from '../lib/api'
+import { comprimir } from '../lib/fotos'
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { juntarLista, separarLista, type Contract, type LayoutItem, type PointRow, type Valor } from '../lib/types'
+import { juntarLista, separarLista, type Contract, type LayoutItem, type Photo, type PointRow, type Valor } from '../lib/types'
 import { fmtGraus } from '../components/TabelaPontos'
 import Icone from '../components/Icone'
 
@@ -27,6 +28,41 @@ export default function PontoForm() {
   const [capturando, setCapturando] = useState(false)
   const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
+  const [fotos, setFotos] = useState<Photo[]>([])
+  const [urls, setUrls] = useState<Record<string, string>>({})
+  const [enviandoFoto, setEnviandoFoto] = useState('')
+  const [erroFoto, setErroFoto] = useState('')
+
+  async function carregarFotos(id: string) {
+    try {
+      const f = await listPhotos(id)
+      setFotos(f)
+      setUrls(f.length ? await photoUrls(f) : {})
+    } catch (e) {
+      setErroFoto(msgErro(e))
+    }
+  }
+
+  /** Adiciona fotos manualmente (arquivo do computador ou galeria do celular) ao ponto já salvo. */
+  async function adicionarFotos(arquivos: FileList | null) {
+    if (!arquivos?.length || !ponto) return
+    setErroFoto('')
+    const lista = Array.from(arquivos)
+    let enviadas = 0
+    try {
+      for (let i = 0; i < lista.length; i++) {
+        setEnviandoFoto(`Enviando ${i + 1} de ${lista.length}…`)
+        const blob = await comprimir(lista[i])
+        await uploadPhoto(ponto.id, ponto.contract_id, blob, `${ponto.ID}_${Date.now()}_${i + 1}.jpg`)
+        enviadas++
+      }
+    } catch (e) {
+      setErroFoto(`${enviadas} de ${lista.length} foto(s) enviada(s). Erro: ${msgErro(e)}`)
+    } finally {
+      setEnviandoFoto('')
+      await carregarFotos(ponto.id)
+    }
+  }
 
   useEffect(() => {
     ;(async () => {
@@ -38,6 +74,7 @@ export default function PontoForm() {
           const p = await getPoint(pointId)
           setPonto(p)
           setValores(p.valores ?? {})
+          carregarFotos(p.id)
           if (p.latitude !== null && p.longitude !== null) {
             setLocal({ latitude: p.latitude, longitude: p.longitude, precisao_m: p.precisao_m, capturado_em: p.capturado_em ?? p.created_at })
           }
@@ -191,11 +228,39 @@ export default function PontoForm() {
           </div>
         )}
 
-        {/* LINK_FOTOS — sistema */}
+        {/* LINK_FOTOS — sistema · fotos do ponto com envio manual */}
         {!novo && ponto && (
-          <div className="campo-sistema">
-            <span className="rotulo-sistema">LINK_FOTOS</span>
-            <Link className="btn-fotos" to={ponto.LINK_FOTOS}><Icone nome="camera" tamanho={15} />Ver fotos ({ponto.total_fotos})</Link>
+          <div className="bloco-fotos">
+            <div className="gps-cabecalho">
+              <span className="rotulo-sistema">FOTOS</span>
+              <Link className="btn-fotos" to={ponto.LINK_FOTOS}><Icone nome="camera" tamanho={15} />Ver fotos ({fotos.length})</Link>
+            </div>
+            {fotos.length > 0 && (
+              <div className="fotos-ponto">
+                {fotos.map((f) => (
+                  <Link key={f.id} to={ponto.LINK_FOTOS} className="miniatura" title={f.nome_arquivo ?? 'foto'}>
+                    {urls[f.id] ? <img src={urls[f.id]} alt={f.nome_arquivo ?? 'foto'} loading="lazy" /> : <span>…</span>}
+                  </Link>
+                ))}
+              </div>
+            )}
+            {fotos.length === 0 && <p className="desc">Nenhuma foto neste ponto ainda.</p>}
+            {!somenteLeitura && (
+              <div className="barra-fotos">
+                <label className="arquivo">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    disabled={!!enviandoFoto}
+                    onChange={(e) => { adicionarFotos(e.target.files); e.target.value = '' }}
+                  />
+                  <span className="btn"><Icone nome="enviar" />Adicionar foto</span>
+                </label>
+                {enviandoFoto && <span className="enviando">{enviandoFoto}</span>}
+              </div>
+            )}
+            {erroFoto && <div className="alerta erro">{erroFoto}</div>}
           </div>
         )}
 

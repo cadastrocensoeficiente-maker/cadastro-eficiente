@@ -346,7 +346,7 @@ label.check input { width: 18px; min-height: 18px; }
 .rotulo-sistema { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.8rem; letter-spacing: 0.04em; color: var(--sistema); }
 .valor-id { font-size: 1.15rem; font-weight: 600; }
 .bloco-gps { background: var(--sistema-claro); border-radius: var(--raio); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-.gps-cabecalho { display: flex; justify-content: space-between; }
+.gps-cabecalho { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .gps-valores { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .gps-valores div { background: var(--superficie); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; }
 .gps-valores small { color: var(--tinta-3); font-size: 0.72rem; }
@@ -552,3 +552,9 @@ label.check input { width: 18px; min-height: 18px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* Fotos dentro da edição do ponto */
+.bloco-fotos { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--sistema-claro); border-radius: var(--raio); }
+.bloco-fotos .barra-fotos { margin-bottom: 0; }
+.fotos-ponto { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.fotos-ponto .miniatura img, .fotos-ponto .miniatura > span { aspect-ratio: 1; }
