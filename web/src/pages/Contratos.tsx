@@ -1,9 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Suspense, lazy, useEffect, useState, type FormEvent } from 'react'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { listContracts, listDeletedContracts, restoreContract, saveContract, type ContratoExcluido } from '../lib/api'
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import type { Contract } from '../lib/types'
+
+const Dashboard = lazy(() => import('../components/Dashboard'))
 
 export const EPSG_SUGERIDOS = [
   { epsg: 31984, nome: 'SIRGAS 2000 / UTM 24S (Ceará leste, RN, PB, PE)' },
@@ -22,6 +24,8 @@ export default function Contratos() {
   const [aviso, setAviso] = useState<string>((location.state as { aviso?: string } | null)?.aviso ?? '')
   const [excluidos, setExcluidos] = useState<ContratoExcluido[]>([])
   const [verExcluidos, setVerExcluidos] = useState(false)
+  const [params, setParams] = useSearchParams()
+  const aba = params.get('aba') === 'dashboard' ? 'dashboard' : 'contratos'
 
   const carregar = () => {
     listContracts().then(setContratos).catch((e) => setErro(msgErro(e)))
@@ -52,6 +56,26 @@ export default function Contratos() {
 
   return (
     <section>
+      <div className="abas" role="tablist">
+        <button role="tab" aria-selected={aba === 'contratos'} className={aba === 'contratos' ? 'aba ativa' : 'aba'} onClick={() => setParams({})}>
+          Contratos
+        </button>
+        <button role="tab" aria-selected={aba === 'dashboard'} className={aba === 'dashboard' ? 'aba ativa' : 'aba'} onClick={() => setParams({ aba: 'dashboard' })}>
+          Dashboard
+        </button>
+      </div>
+
+      {aba === 'dashboard' ? (
+        <>
+          <div className="cabecalho-pagina">
+            <h1>Dashboard de produção</h1>
+          </div>
+          <Suspense fallback={<div className="carregando">Carregando…</div>}>
+            <Dashboard contratos={contratos} />
+          </Suspense>
+        </>
+      ) : (
+      <>
       <div className="cabecalho-pagina">
         <h1>Contratos</h1>
         {isAdmin && (
@@ -106,6 +130,8 @@ export default function Contratos() {
             </ul>
           )}
         </div>
+      )}
+      </>
       )}
     </section>
   )

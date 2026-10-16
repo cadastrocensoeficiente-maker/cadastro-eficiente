@@ -302,3 +302,32 @@ export async function deletePhoto(foto: Photo) {
   }
   await callApi('/api/fotos-excluir', { photo_id: foto.id })
 }
+
+// ---------------- Dashboard de produção ----------------
+/** Uma linha por contrato × dia × colaborador × origem (função dashboard_producao, migração 0015). */
+export interface LinhaProducao {
+  contract_id: string
+  dia: string // aaaa-mm-dd (dia em Fortaleza)
+  colaborador_id: string | null
+  colaborador: string
+  origem: 'gps' | 'importacao' | 'manual_admin'
+  pontos: number
+  com_foto: number
+  fotos: number
+  primeiro: string
+  ultimo: string
+}
+
+/** Lê toda a produção (em páginas de 1000 linhas, para não cortar no limite da API). */
+export async function dashboardProducao() {
+  const todas: LinhaProducao[] = []
+  const size = 1000
+  for (let from = 0; ; from += size) {
+    const r = await supabase.rpc('dashboard_producao').range(from, from + size - 1)
+    if (r.error) throw r.error
+    const linhas = (r.data ?? []) as LinhaProducao[]
+    todas.push(...linhas)
+    if (linhas.length < size) break
+  }
+  return todas
+}
