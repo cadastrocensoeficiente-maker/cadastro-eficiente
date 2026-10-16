@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth'
 import { listContracts } from '../lib/api'
 import { URL_APK } from '../components/Equipe'
 import type { Contract, Role } from '../lib/types'
+import Icone from '../components/Icone'
 
 const PAPEIS: { value: Role; label: string }[] = [
   { value: 'cadastrador', label: 'Cadastrador (campo)' },
@@ -77,7 +78,7 @@ export default function Usuarios() {
     <section>
       <div className="cabecalho-pagina">
         <h1>Usuários</h1>
-        {!novo && !editando && <button className="btn primario" onClick={() => setNovo(true)}>+ Novo usuário</button>}
+        {!novo && !editando && <button className="btn primario" onClick={() => setNovo(true)}><Icone nome="mais" />Novo usuário</button>}
       </div>
       <p className="sub">
         <b>Cadastrador</b> usa o aplicativo de campo e só vê os contratos marcados para ele; <b>Administrativo</b> consulta o

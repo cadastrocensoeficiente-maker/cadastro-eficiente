@@ -2,11 +2,14 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { br, brCurto, dataHora, diaSemana, n, n1, pct, type Resultado } from './producao'
 
-const AMBAR: [number, number, number] = [217, 119, 6]
-const AMBAR_CLARO: [number, number, number] = [254, 243, 199]
-const TINTA: [number, number, number] = [22, 25, 29]
-const TINTA_2: [number, number, number] = [74, 80, 89]
-const LINHA: [number, number, number] = [220, 216, 207]
+// Cores da marca: azul Eficiente e branco
+const AZUL: [number, number, number] = [11, 78, 162]
+const AZUL_CLARO: [number, number, number] = [232, 240, 251]
+const AZUL_PROFUNDO: [number, number, number] = [8, 42, 92]
+const FUNDO_ALT: [number, number, number] = [246, 249, 253]
+const TINTA: [number, number, number] = [14, 26, 43]
+const TINTA_2: [number, number, number] = [71, 85, 105]
+const LINHA: [number, number, number] = [213, 223, 236]
 
 interface Info {
   contrato: string
@@ -23,7 +26,7 @@ export async function gerarPdfDashboard(r: Resultado, info: Info) {
   let y = M
 
   // ---------- cabeçalho ----------
-  doc.setFillColor(...AMBAR)
+  doc.setFillColor(...AZUL)
   doc.circle(M + 2, y + 2.6, 2, 'F')
   doc.setTextColor(...TINTA)
   doc.setFont('helvetica', 'bold').setFontSize(15)
@@ -51,9 +54,9 @@ export async function gerarPdfDashboard(r: Resultado, info: Info) {
   const bw = (W - 2 * M - gap * (kpis.length - 1)) / kpis.length
   kpis.forEach(([t, v, s], i) => {
     const x = M + i * (bw + gap)
-    if (i === 0) doc.setFillColor(...AMBAR_CLARO)
-    else doc.setFillColor(250, 248, 244)
-    doc.setDrawColor(...(i === 0 ? AMBAR : LINHA))
+    if (i === 0) doc.setFillColor(...AZUL_CLARO)
+    else doc.setFillColor(...FUNDO_ALT)
+    doc.setDrawColor(...(i === 0 ? AZUL : LINHA))
     doc.roundedRect(x, y, bw, 19, 1.5, 1.5, 'FD')
     doc.setFontSize(7.5).setTextColor(...TINTA_2).setFont('helvetica', 'normal')
     doc.text(t, x + 3, y + 5)
@@ -84,7 +87,7 @@ export async function gerarPdfDashboard(r: Resultado, info: Info) {
       const x = M + i * passo + (passo - larg) / 2
       const bh = (s.pontos / max) * (h - 12)
       if (bh > 0) {
-        doc.setFillColor(...AMBAR)
+        doc.setFillColor(...AZUL)
         doc.rect(x, base - bh, larg, bh, 'F')
       }
       if (mostrarRotulos) {
@@ -107,8 +110,8 @@ export async function gerarPdfDashboard(r: Resultado, info: Info) {
 
   const estilo = {
     styles: { font: 'helvetica', fontSize: 8, cellPadding: 1.6, textColor: TINTA, lineColor: LINHA, lineWidth: 0.1 },
-    headStyles: { fillColor: [31, 42, 55] as [number, number, number], textColor: 255, fontStyle: 'bold' as const },
-    alternateRowStyles: { fillColor: [250, 248, 244] as [number, number, number] },
+    headStyles: { fillColor: AZUL_PROFUNDO, textColor: 255, fontStyle: 'bold' as const },
+    alternateRowStyles: { fillColor: FUNDO_ALT },
     margin: { left: M, right: M },
   }
   const titulo = (t: string) => {
@@ -170,7 +173,7 @@ export async function gerarPdfDashboard(r: Resultado, info: Info) {
       didParseCell: (d) => {
         if (d.section === 'body' && d.row.index === mz.linhas.length) {
           d.cell.styles.fontStyle = 'bold'
-          d.cell.styles.fillColor = AMBAR_CLARO
+          d.cell.styles.fillColor = AZUL_CLARO
         }
       },
     })

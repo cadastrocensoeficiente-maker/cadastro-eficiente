@@ -41,7 +41,7 @@ export default function Login() {
       <form className="login-card" onSubmit={enviar}>
         <div className="marca grande">
           <span className="marca-ponto" aria-hidden />
-          Cadastro <b>Eficiente</b>
+          <span>Cadastro <b>Eficiente</b></span>
         </div>
         <p className="sub">Cadastro de pontos de iluminação pública</p>
 

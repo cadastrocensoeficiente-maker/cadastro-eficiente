@@ -8,6 +8,7 @@ import { addColumn, copyColumns, listColumns, listContracts, removeColumn, reord
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { COLUMN_TYPES, type ColumnType, type Contract, type ContractColumn } from '../lib/types'
+import Icone from './Icone'
 
 const SISTEMA_FINAL = ['LATITUDE', 'LONGITUDE', 'DATA_CADASTRO', 'HORA_CADASTRO', 'COLABORADOR', 'LINK_FOTOS']
 const DESC_SISTEMA: Record<string, string> = {
@@ -197,8 +198,8 @@ function ItemColuna(props: {
         <span className="botoes">
           <button className="btn-icone" onClick={props.onSubir} disabled={props.primeiro} aria-label="Subir">▲</button>
           <button className="btn-icone" onClick={props.onDescer} disabled={props.ultimo} aria-label="Descer">▼</button>
-          <button className="btn-link" onClick={props.onEditar}>Editar</button>
-          <button className="btn-link perigo" onClick={props.onRemover}>Remover</button>
+          <button className="acao" onClick={props.onEditar}><Icone nome="editar" tamanho={15} />Editar</button>
+          <button className="acao perigo" onClick={props.onRemover}><Icone nome="lixeira" tamanho={15} />Remover</button>
         </span>
       )}
     </li>

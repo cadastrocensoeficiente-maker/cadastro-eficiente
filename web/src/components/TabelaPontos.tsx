@@ -6,6 +6,7 @@ import Lixeira from './Lixeira'
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import type { Contract, LayoutItem, PointRow, Valor } from '../lib/types'
+import Icone from './Icone'
 
 const POR_PAGINA = 50
 
@@ -110,18 +111,21 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
   return (
     <div>
       <div className="barra-ferramentas">
-        <input className="busca" placeholder="Buscar por ID, plaqueta, endereço…" value={busca} onChange={(e) => setBusca(e.target.value)} />
-        <span className="contagem">{dados.total.toLocaleString('pt-BR')} ponto(s)</span>
-        <div className="espaco" />
-        <button className="btn" onClick={() => setExportar(true)}>
-          ⬇ Baixar planilha
-        </button>
-        {isAdmin && (
-          <button className="btn" onClick={() => setVerLixeira(true)}>🗑 Lixeira</button>
-        )}
+        <div className="barra-busca">
+          <input className="busca" type="search" placeholder="Buscar por ID, plaqueta, endereço…" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar pontos" />
+          <span className="contagem"><b>{dados.total.toLocaleString('pt-BR')}</b> ponto(s)</span>
+        </div>
+        <div className="grupo-botoes">
+          <button className="btn" onClick={() => setExportar(true)}>
+            <Icone nome="baixar" />Baixar planilha
+          </button>
+          {isAdmin && (
+            <button className="btn" onClick={() => setVerLixeira(true)}><Icone nome="lixeira" />Lixeira</button>
+          )}
+        </div>
         {podeEditar && (
           <button className="btn primario" onClick={() => navigate(`/contratos/${contrato.id}/pontos/novo`)}>
-            + Novo ponto
+            <Icone nome="mais" />Novo ponto
           </button>
         )}
       </div>
@@ -134,15 +138,15 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
       {desfazer && (
         <div className="alerta ok barra-acao">
           <span>{desfazer.texto}</span>
-          <button className="btn" onClick={desfazerExclusao}>↶ Desfazer</button>
-          <button className="btn-x" onClick={() => setDesfazer(null)} aria-label="Fechar">×</button>
+          <button className="btn" onClick={desfazerExclusao}><Icone nome="desfazer" />Desfazer</button>
+          <button className="btn-x" onClick={() => setDesfazer(null)} aria-label="Fechar"><Icone nome="fechar" /></button>
         </div>
       )}
       {isAdmin && selecao.size > 0 && (
-        <div className="alerta aviso barra-acao">
+        <div className="barra-selecao barra-acao">
           <span><b>{selecao.size}</b> ponto(s) selecionado(s)</span>
           <button className="btn perigo" disabled={excluindo} onClick={() => excluir([...selecao], `${selecao.size} ponto(s) selecionado(s)`)}>
-            {excluindo ? 'Excluindo…' : '🗑 Excluir selecionados'}
+            {excluindo ? 'Excluindo…' : <><Icone nome="lixeira" />Excluir selecionados</>}
           </button>
           <button className="btn" onClick={() => setSelecao(new Set())}>Limpar seleção</button>
         </div>
@@ -185,9 +189,9 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
                   {podeEditar && (
                     <td className="col-acoes" onClick={(e) => e.stopPropagation()}>
                       {isAdmin && <input type="checkbox" checked={selecao.has(p.id)} onChange={() => alternar(p.id)} aria-label={`Selecionar ponto ${p.ID}`} />}
-                      <Link className="acao" to={`/contratos/${contrato.id}/pontos/${p.id}`} title="Editar ponto">✏️ Editar</Link>
+                      <Link className="acao" to={`/contratos/${contrato.id}/pontos/${p.id}`} title="Editar ponto" aria-label={`Editar ponto ${p.ID}`}><Icone nome="editar" tamanho={16} /></Link>
                       {isAdmin && (
-                        <button className="acao perigo" title="Excluir ponto" disabled={excluindo} onClick={() => excluir([p.id], `o ponto ${p.ID}`)}>🗑</button>
+                        <button className="acao perigo" title="Excluir ponto" aria-label={`Excluir ponto ${p.ID}`} disabled={excluindo} onClick={() => excluir([p.id], `o ponto ${p.ID}`)}><Icone nome="lixeira" tamanho={16} /></button>
                       )}
                     </td>
                   )}
@@ -209,7 +213,7 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
                         return (
                           <td key="LINK_FOTOS" onClick={(e) => e.stopPropagation()}>
                             <Link className="btn-fotos" to={p.LINK_FOTOS}>
-                              📷 Ver fotos{p.total_fotos > 0 ? ` (${p.total_fotos})` : ''}
+                              <Icone nome="camera" tamanho={15} />Fotos{p.total_fotos > 0 ? ` (${p.total_fotos})` : ''}
                             </Link>
                           </td>
                         )
@@ -227,13 +231,13 @@ export default function TabelaPontos({ contrato, layout }: { contrato: Contract;
       {paginas > 1 && (
         <div className="paginacao">
           <button className="btn" disabled={pagina === 0} onClick={() => setPagina(pagina - 1)}>
-            ‹ Anterior
+            <Icone nome="voltar" />Anterior
           </button>
           <span>
             Página {pagina + 1} de {paginas}
           </span>
           <button className="btn" disabled={pagina + 1 >= paginas} onClick={() => setPagina(pagina + 1)}>
-            Próxima ›
+            Próxima<Icone nome="seta" />
           </button>
         </div>
       )}

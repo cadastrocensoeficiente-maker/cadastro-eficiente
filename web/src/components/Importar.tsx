@@ -3,6 +3,7 @@ import { importPoints } from '../lib/api'
 import { DESTINOS_SISTEMA_IGNORADOS, lerXlsx, mapearAutomatico, montarLinhasImportacao, normalizarCabecalho, type Destino, type PlanilhaLida } from '../lib/excel'
 import { msgErro } from '../lib/supabase'
 import type { ColumnType, Contract, LayoutItem } from '../lib/types'
+import Icone from './Icone'
 
 const LOTE = 500
 
@@ -81,7 +82,7 @@ export default function Importar({ contrato, layout }: { contrato: Contract; lay
 
       <label className="arquivo">
         <input type="file" accept=".xlsx" onChange={(e) => abrir(e.target.files?.[0])} />
-        <span className="btn">📄 Escolher planilha .xlsx</span>
+        <span className="btn"><Icone nome="enviar" />Escolher planilha .xlsx</span>
       </label>
 
       {erro && <div className="alerta erro">{erro}</div>}

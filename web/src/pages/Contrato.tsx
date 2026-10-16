@@ -8,6 +8,7 @@ import TabelaPontos from '../components/TabelaPontos'
 import Colunas from '../components/Colunas'
 import Equipe from '../components/Equipe'
 import { ContratoForm } from './Contratos'
+import Icone from '../components/Icone'
 
 const Importar = lazy(() => import('../components/Importar'))
 
@@ -126,7 +127,7 @@ function ExcluirContrato({ contrato }: { contrato: Contract }) {
         </p>
       </div>
       {!aberto ? (
-        <button className="btn perigo" onClick={() => setAberto(true)}>🗑 Excluir contrato</button>
+        <button className="btn perigo" onClick={() => setAberto(true)}><Icone nome="lixeira" />Excluir contrato</button>
       ) : (
         <div className="confirmar-exclusao">
           <label>
