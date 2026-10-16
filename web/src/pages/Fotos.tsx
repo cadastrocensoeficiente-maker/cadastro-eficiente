@@ -4,6 +4,7 @@ import { deletePhoto, getContract, getPoint, listPhotos, photoUrls, uploadPhoto 
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import type { Contract, Photo, PointRow } from '../lib/types'
+import Icone from '../components/Icone'
 
 /** Reduz a foto para no máximo 2048 px e JPEG 85% — economiza dados móveis e armazenamento. */
 async function comprimir(arquivo: File): Promise<Blob> {
@@ -108,11 +109,11 @@ export default function Fotos() {
         <div className="barra-fotos">
           <label className="arquivo">
             <input type="file" accept="image/*" capture="environment" onChange={(e) => { enviar(e.target.files); e.target.value = '' }} />
-            <span className="btn primario">📷 Tirar foto</span>
+            <span className="btn primario"><Icone nome="camera" />Tirar foto</span>
           </label>
           <label className="arquivo">
             <input type="file" accept="image/*" multiple onChange={(e) => { enviar(e.target.files); e.target.value = '' }} />
-            <span className="btn">🖼 Escolher da galeria</span>
+            <span className="btn"><Icone nome="enviar" />Escolher da galeria</span>
           </label>
           {enviando && <span className="enviando">{enviando}</span>}
         </div>

@@ -5,6 +5,7 @@ import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { juntarLista, separarLista, type Contract, type LayoutItem, type PointRow, type Valor } from '../lib/types'
 import { fmtGraus } from '../components/TabelaPontos'
+import Icone from '../components/Icone'
 
 interface Local {
   latitude: number
@@ -194,7 +195,7 @@ export default function PontoForm() {
         {!novo && ponto && (
           <div className="campo-sistema">
             <span className="rotulo-sistema">LINK_FOTOS</span>
-            <Link className="btn-fotos" to={ponto.LINK_FOTOS}>📷 Ver fotos ({ponto.total_fotos})</Link>
+            <Link className="btn-fotos" to={ponto.LINK_FOTOS}><Icone nome="camera" tamanho={15} />Ver fotos ({ponto.total_fotos})</Link>
           </div>
         )}
 
@@ -214,7 +215,7 @@ export default function PontoForm() {
             ) : (
               <>
                 {isAdmin && (
-                  <button type="button" className="btn perigo" onClick={excluir}>Excluir</button>
+                  <button type="button" className="btn perigo empurra" onClick={excluir}><Icone nome="lixeira" />Excluir ponto</button>
                 )}
                 <button className="btn primario" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar'}</button>
               </>

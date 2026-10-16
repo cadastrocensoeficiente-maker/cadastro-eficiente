@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { countPoints, listAllPoints, type FiltroPeriodo } from '../lib/api'
 import { msgErro } from '../lib/supabase'
 import type { Contract, LayoutItem } from '../lib/types'
+import Icone from './Icone'
 
 type Modo = 'todos' | 'dia' | 'intervalo'
 
@@ -66,8 +67,8 @@ export default function Exportar({ contrato, layout, onFechar }: { contrato: Con
     <div className="modal-fundo" onClick={() => !ocupado && onFechar()}>
       <div className="modal modal-estreito" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Baixar planilha">
         <div className="modal-topo">
-          <h2>⬇ Baixar planilha — {contrato.nome}</h2>
-          <button className="btn-x" onClick={onFechar} disabled={ocupado} aria-label="Fechar">×</button>
+          <h2>Baixar planilha <small>{contrato.nome}</small></h2>
+          <button className="btn-x" onClick={onFechar} disabled={ocupado} aria-label="Fechar"><Icone nome="fechar" /></button>
         </div>
         <p className="nota">Todos os pontos em um único arquivo Excel, na ordem oficial das colunas. Filtre pela data do cadastro se quiser só uma parte.</p>
 
@@ -106,7 +107,7 @@ export default function Exportar({ contrato, layout, onFechar }: { contrato: Con
               `${total.toLocaleString('pt-BR')} ponto(s)${modo === 'dia' ? ` em ${br(dia)}` : modo === 'intervalo' ? ` de ${br(de)} a ${br(ate)}` : ''}`}
           </span>
           <button className="btn primario" onClick={baixar} disabled={ocupado || invalido || !total}>
-            {progresso || '⬇ Baixar Excel'}
+            {progresso || <><Icone nome="baixar" />Baixar Excel</>}
           </button>
         </div>
       </div>

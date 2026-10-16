@@ -4,6 +4,7 @@ import { listContracts, listDeletedContracts, restoreContract, saveContract, typ
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import type { Contract } from '../lib/types'
+import Icone from '../components/Icone'
 
 const Dashboard = lazy(() => import('../components/Dashboard'))
 
@@ -80,7 +81,7 @@ export default function Contratos() {
         <h1>Contratos</h1>
         {isAdmin && (
           <button className="btn primario" onClick={() => setNovo(true)}>
-            + Novo contrato
+            <Icone nome="mais" />Novo contrato
           </button>
         )}
       </div>
@@ -88,7 +89,7 @@ export default function Contratos() {
       {aviso && (
         <div className="alerta ok barra-acao">
           <span>{aviso}</span>
-          <button className="btn-x" onClick={() => setAviso('')} aria-label="Fechar">×</button>
+          <button className="btn-x" onClick={() => setAviso('')} aria-label="Fechar"><Icone nome="fechar" /></button>
         </div>
       )}
       {novo && <ContratoForm onFechar={() => setNovo(false)} onSalvo={() => { setNovo(false); carregar() }} />}
@@ -113,7 +114,7 @@ export default function Contratos() {
       {isAdmin && excluidos.length > 0 && (
         <div className="contratos-excluidos">
           <button className="link-btn" onClick={() => setVerExcluidos(!verExcluidos)}>
-            {verExcluidos ? '▾' : '▸'} 🗑 Contratos excluídos ({excluidos.length})
+            <span className={verExcluidos ? 'giro aberto' : 'giro'}><Icone nome="seta" tamanho={16} /></span>Contratos excluídos ({excluidos.length})
           </button>
           {verExcluidos && (
             <ul>
@@ -124,7 +125,7 @@ export default function Contratos() {
                     {new Date(c.excluido_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     {c.excluido_por_nome ? ` por ${c.excluido_por_nome}` : ''}</small>
                   </span>
-                  <button className="btn" onClick={() => restaurar(c)}>↶ Restaurar</button>
+                  <button className="btn" onClick={() => restaurar(c)}><Icone nome="desfazer" />Restaurar</button>
                 </li>
               ))}
             </ul>

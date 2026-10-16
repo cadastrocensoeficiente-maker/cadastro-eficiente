@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { dashboardProducao, type LinhaProducao } from '../lib/api'
 import { msgErro } from '../lib/supabase'
 import type { Contract } from '../lib/types'
+import Icone from './Icone'
 import {
   br, brCurto, calcular, chaveColab, dataHora, diaSemana, hojeFortaleza, n, n1, pct, somarDias, type Filtros,
 } from '../lib/producao'
@@ -137,8 +138,8 @@ export default function Dashboard({ contratos }: { contratos: Contract[] }) {
           )}
           <span className="espaco" />
           {atualizado && <small className="nota">Atualizado às {atualizado.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>}
-          <button className="btn" onClick={carregar} disabled={carregando}>{carregando ? 'Atualizando…' : '↻ Atualizar'}</button>
-          <button className="btn primario" onClick={baixarPdf} disabled={!r || gerandoPdf}>{gerandoPdf ? 'Gerando PDF…' : '⤓ Baixar PDF'}</button>
+          <button className="btn" onClick={carregar} disabled={carregando}>{carregando ? 'Atualizando…' : <><Icone nome="atualizar" />Atualizar</>}</button>
+          <button className="btn primario" onClick={baixarPdf} disabled={!r || gerandoPdf}>{gerandoPdf ? 'Gerando PDF…' : <><Icone nome="pdf" />Baixar PDF</>}</button>
         </div>
       </div>
 
@@ -277,7 +278,7 @@ export default function Dashboard({ contratos }: { contratos: Contract[] }) {
                         <tr key={l.chave}>
                           <td className="forte">{l.nome}</td>
                           {l.valores.map((v, i) => (
-                            <td key={i} className={`num${v === 0 ? ' zero' : ''}`} style={v ? { background: `color-mix(in srgb, var(--ambar) ${Math.round(8 + (v / max) * 32)}%, transparent)` } : undefined}>
+                            <td key={i} className={`num${v === 0 ? ' zero' : ''}`} style={v ? { background: `color-mix(in srgb, var(--azul) ${Math.round(8 + (v / max) * 32)}%, transparent)` } : undefined}>
                               {v || '·'}
                             </td>
                           ))}

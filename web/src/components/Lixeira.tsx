@@ -3,6 +3,7 @@ import { listTrash, restorePoints, type PontoLixeira } from '../lib/api'
 import { msgErro } from '../lib/supabase'
 import type { Contract, LayoutItem } from '../lib/types'
 import { exibirValor, fmtGraus } from './TabelaPontos'
+import Icone from './Icone'
 
 /** Pontos excluídos do contrato, com opção de restaurar. */
 export default function Lixeira({ contrato, layout, onFechar }: {
@@ -48,8 +49,8 @@ export default function Lixeira({ contrato, layout, onFechar }: {
     <div className="modal-fundo" onClick={fechar}>
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Lixeira">
         <div className="modal-topo">
-          <h2>🗑 Lixeira — {contrato.nome}</h2>
-          <button className="btn-x" onClick={fechar} aria-label="Fechar">×</button>
+          <h2>Lixeira <small>{contrato.nome}</small></h2>
+          <button className="btn-x" onClick={fechar} aria-label="Fechar"><Icone nome="fechar" /></button>
         </div>
         <p className="nota">Pontos excluídos não aparecem no painel nem no Excel. Restaure para que voltem com o mesmo ID e as fotos.</p>
         {erro && <div className="alerta erro">{erro}</div>}
@@ -61,7 +62,7 @@ export default function Lixeira({ contrato, layout, onFechar }: {
           <>
             <div className="barra-acao">
               <button className="btn primario" disabled={!sel.size || trabalhando} onClick={() => restaurar([...sel])}>
-                ↶ Restaurar selecionados{sel.size ? ` (${sel.size})` : ''}
+                <Icone nome="desfazer" />Restaurar selecionados{sel.size ? ` (${sel.size})` : ''}
               </button>
               <span className="contagem">{itens.length} ponto(s) na lixeira</span>
             </div>
@@ -89,7 +90,7 @@ export default function Lixeira({ contrato, layout, onFechar }: {
                       <td className="mono num">{fmtGraus(i.longitude)}</td>
                       <td>{i.total_fotos}</td>
                       <td>{new Date(i.excluido_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}{i.excluido_por_nome ? ` · ${i.excluido_por_nome}` : ''}</td>
-                      <td><button className="btn" disabled={trabalhando} onClick={() => restaurar([i.id])}>↶ Restaurar</button></td>
+                      <td><button className="btn" disabled={trabalhando} onClick={() => restaurar([i.id])}><Icone nome="desfazer" />Restaurar</button></td>
                     </tr>
                   ))}
                 </tbody>
