@@ -20,6 +20,10 @@ export default function App() {
   if (publico) return <FotosPublicas token={publico[1]} />
 
   if (carregando) return <div className="tela-centro">Carregando…</div>
+  // Link antigo das fotos (/contratos/.../pontos/<id>/fotos) aberto por quem não está logado:
+  // mostra só as fotos, sem botões de enviar e sem pedir login.
+  const antigo = pathname.match(/^\/contratos\/[^/]+\/pontos\/([^/]+)\/fotos\/?$/)
+  if (!session && antigo) return <FotosPublicas pontoId={antigo[1]} />
   if (!session) return <Login />
 
   if (profile?.role === 'cadastrador') {

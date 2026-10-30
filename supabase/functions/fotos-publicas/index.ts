@@ -1,5 +1,6 @@
 // Supabase Edge Function: fotos-publicas
 // GET /functions/v1/fotos-publicas?t=<link_publico>
+//     /functions/v1/fotos-publicas?p=<id interno do ponto>  (link antigo /contratos/.../pontos/<id>/fotos)
 //
 // Página pública de fotos (sem login). Recebe o código aleatório de UM ponto
 // e devolve somente: o ID do ponto e links temporários (1 h) das fotos dele.
@@ -24,9 +25,12 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
   if (req.method !== 'GET') return json({ error: 'Método não permitido.' }, 405)
 
-  const token = new URL(req.url).searchParams.get('t') ?? ''
+  const params = new URL(req.url).searchParams
+  const token = params.get('t') ?? ''
+  const pontoId = params.get('p') ?? ''
   const naoEncontrado = () => json({ error: 'Link inválido ou desativado.' }, 404)
-  if (!UUID.test(token)) return naoEncontrado()
+  const campo = UUID.test(token) ? 'link_publico' : UUID.test(pontoId) ? 'id' : null
+  if (!campo) return naoEncontrado()
 
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -35,7 +39,7 @@ Deno.serve(async (req) => {
   const { data: ponto } = await sb
     .from('points')
     .select('id, codigo, excluido_em, contracts!inner(excluido_em)')
-    .eq('link_publico', token)
+    .eq(campo, campo === 'id' ? pontoId : token)
     .maybeSingle()
   // deno-lint-ignore no-explicit-any
   if (!ponto || ponto.excluido_em || (ponto as any).contracts?.excluido_em) return naoEncontrado()

@@ -12,7 +12,7 @@ interface FotoPublica {
   data: string
 }
 
-export default function FotosPublicas({ token }: { token: string }) {
+export default function FotosPublicas({ token, pontoId }: { token?: string; pontoId?: string }) {
   const [ponto, setPonto] = useState<string | null>(null)
   const [fotos, setFotos] = useState<FotoPublica[] | null>(null)
   const [erro, setErro] = useState('')
@@ -20,7 +20,8 @@ export default function FotosPublicas({ token }: { token: string }) {
 
   useEffect(() => {
     document.title = 'Fotos do ponto'
-    fetch(`${SUPABASE_URL}/functions/v1/fotos-publicas?t=${encodeURIComponent(token)}`, {
+    const q = token ? `t=${encodeURIComponent(token)}` : `p=${encodeURIComponent(pontoId ?? '')}`
+    fetch(`${SUPABASE_URL}/functions/v1/fotos-publicas?${q}`, {
       headers: { apikey: SUPABASE_KEY },
     })
       .then(async (r) => {
@@ -31,7 +32,7 @@ export default function FotosPublicas({ token }: { token: string }) {
         if (j.ponto) document.title = `Fotos do ponto ${j.ponto}`
       })
       .catch((e) => setErro(e instanceof Error ? e.message : 'Não foi possível carregar as fotos.'))
-  }, [token])
+  }, [token, pontoId])
 
   useEffect(() => {
     if (aberta === null || !fotos) return
