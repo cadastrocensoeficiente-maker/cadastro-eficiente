@@ -64,7 +64,7 @@ export async function exportarXlsx(nomeContrato: string, layout: LayoutItem[], p
         case 'COLABORADOR':
           return p.COLABORADOR
         case 'LINK_FOTOS':
-          return { text: p.total_fotos > 0 ? `📷 Ver fotos (${p.total_fotos})` : '📷 Ver fotos', hyperlink: origem + p.LINK_FOTOS }
+          return { text: p.total_fotos > 0 ? `📷 Ver fotos (${p.total_fotos})` : '📷 Ver fotos', hyperlink: origem + (p.LINK_PUBLICO ?? p.LINK_FOTOS) }
         default:
           return c.sistema ? null : formatarValor(p.valores[c.column_id!], c.tipo)
       }

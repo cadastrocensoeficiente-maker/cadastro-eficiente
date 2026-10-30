@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { deletePhoto, getContract, getPoint, listPhotos, photoUrls, uploadPhoto } from '../lib/api'
+import { deletePhoto, getContract, getPoint, linkPublico, listPhotos, photoUrls, uploadPhoto } from '../lib/api'
 import { msgErro } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import type { Contract, Photo, PointRow } from '../lib/types'
@@ -37,6 +37,8 @@ export default function Fotos() {
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState('')
   const [aberta, setAberta] = useState<Photo | null>(null)
+  const [urlsProntas, setUrlsProntas] = useState(false)
+  const [copiado, setCopiado] = useState(false)
 
   async function carregar() {
     try {
@@ -44,13 +46,17 @@ export default function Fotos() {
       setContrato(c)
       setPonto(p)
       setFotos(f)
+      setUrlsProntas(false)
       if (f.length) {
         try {
           setUrls(await photoUrls(f))
         } catch (e) {
           setErro(msgErro(e))
         }
+      } else {
+        setUrls({})
       }
+      setUrlsProntas(true)
     } catch (e) {
       setErro(msgErro(e))
     }
@@ -90,6 +96,21 @@ export default function Fotos() {
     }
   }
 
+  async function copiarLink() {
+    const link = ponto ? linkPublico(ponto) : null
+    if (!link) return
+    try {
+      await navigator.clipboard.writeText(link)
+    } catch {
+      prompt('Copie o link:', link)
+    }
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 2500)
+  }
+
+  // Só aparecem fotos que realmente têm arquivo: uma foto excluída não deixa moldura vazia.
+  const visiveis = urlsProntas ? fotos.filter((f) => urls[f.id]) : fotos
+
   if (!ponto || !contrato) return erro ? <div className="alerta erro">{erro}</div> : <div className="carregando">Carregando…</div>
 
   return (
@@ -102,8 +123,20 @@ export default function Fotos() {
         <h1>
           Fotos do ponto <span className="mono">{ponto.ID}</span>
         </h1>
-        <span className="contagem">{fotos.length} foto(s)</span>
+        <span className="contagem">{visiveis.length} foto(s)</span>
       </div>
+
+      {linkPublico(ponto) && (
+        <div className="link-publico">
+          <span>
+            <b>Link aberto das fotos</b> — quem receber este link vê somente as fotos deste ponto, sem precisar de login.
+          </span>
+          <div className="link-publico-acoes">
+            <button className="btn" onClick={copiarLink}>{copiado ? 'Link copiado!' : 'Copiar link'}</button>
+            <a className="btn" href={linkPublico(ponto)!} target="_blank" rel="noreferrer">Abrir</a>
+          </div>
+        </div>
+      )}
 
       {podeEditar && (
         <div className="barra-fotos">
@@ -120,11 +153,11 @@ export default function Fotos() {
       )}
       {erro && <div className="alerta erro">{erro}</div>}
 
-      {fotos.length === 0 ? (
+      {visiveis.length === 0 ? (
         <div className="vazio">Nenhuma foto neste ponto ainda.</div>
       ) : (
         <div className="galeria">
-          {fotos.map((f) => (
+          {visiveis.map((f) => (
             <button key={f.id} className="miniatura" onClick={() => setAberta(f)}>
               {urls[f.id] ? <img src={urls[f.id]} alt={f.nome_arquivo ?? 'foto'} loading="lazy" /> : <span>…</span>}
               <small>{new Date(f.created_at).toLocaleString('pt-BR')}</small>

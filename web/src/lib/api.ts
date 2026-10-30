@@ -296,11 +296,18 @@ export async function uploadPhoto(pointId: string, contractId: string, file: Blo
 
 export async function deletePhoto(foto: Photo) {
   if (foto.armazenamento === 'supabase') {
-    unwrap(await supabase.from('point_photos').delete().eq('id', foto.id))
+    const { error, count } = await supabase.from('point_photos').delete({ count: 'exact' }).eq('id', foto.id)
+    if (error) throw error
+    if (!count) throw new Error('A exclusão não foi permitida pelo banco.')
     await supabase.storage.from('fotos').remove([foto.r2_key])
     return
   }
   await callApi('/api/fotos-excluir', { photo_id: foto.id })
+}
+
+/** Link aberto das fotos de um ponto (sem login; mostra somente as fotos). */
+export function linkPublico(p: { LINK_PUBLICO?: string | null }) {
+  return p.LINK_PUBLICO ? window.location.origin + p.LINK_PUBLICO : null
 }
 
 // ---------------- Dashboard de produção ----------------
