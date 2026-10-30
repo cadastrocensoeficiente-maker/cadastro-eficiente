@@ -552,3 +552,10 @@ label.check input { width: 18px; min-height: 18px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* Link aberto das fotos */
+.link-publico { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; margin-bottom: 14px; background: var(--superficie); border: 1px solid var(--linha); border-radius: var(--raio); color: var(--tinta-2); font-size: 0.9rem; }
+.link-publico b { color: var(--tinta); }
+.link-publico-acoes { display: flex; gap: 8px; }
+.publico .topo-faixa { justify-content: flex-start; }
+.lightbox-acoes { flex-wrap: wrap; justify-content: center; }

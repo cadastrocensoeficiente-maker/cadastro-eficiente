@@ -68,6 +68,8 @@ export interface PointRow {
   LATITUDE: number | null
   LONGITUDE: number | null
   LINK_FOTOS: string
+  /** link aberto (sem login) que mostra somente as fotos do ponto: /f/<código> */
+  LINK_PUBLICO?: string | null
   total_fotos: number
   latitude: number | null
   longitude: number | null

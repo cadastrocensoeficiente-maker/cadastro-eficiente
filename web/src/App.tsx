@@ -5,6 +5,7 @@ import Contratos from './pages/Contratos'
 import Contrato from './pages/Contrato'
 import PontoForm from './pages/PontoForm'
 import Fotos from './pages/Fotos'
+import FotosPublicas from './pages/FotosPublicas'
 import Usuarios from './pages/Usuarios'
 import { URL_APK, URL_APP_CAMPO } from './components/Equipe'
 import Icone from './components/Icone'
@@ -13,6 +14,10 @@ export default function App() {
   const { session, profile, carregando, isAdmin, sair } = useAuth()
   const { pathname } = useLocation()
   const naUsuarios = pathname.startsWith('/usuarios')
+
+  // Link aberto das fotos: não exige login e não mostra nada além das fotos do ponto.
+  const publico = pathname.match(/^\/f\/([^/]+)\/?$/)
+  if (publico) return <FotosPublicas token={publico[1]} />
 
   if (carregando) return <div className="tela-centro">Carregando…</div>
   if (!session) return <Login />
